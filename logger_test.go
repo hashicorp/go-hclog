@@ -86,3 +86,30 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO ] log/logger_test.go:76: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 }
+
+func BenchmarkLogger(b *testing.B) {
+	b.Run("info with 10 pairs", func(b *testing.B) {
+		var buf bytes.Buffer
+
+		logger := New(LoggerOptions{
+			Name:            "test",
+			Output:          &buf,
+			IncludeLocation: true,
+		})
+
+		for i := 0; i < b.N; i++ {
+			logger.Info("this is some message",
+				"name", "foo",
+				"what", "benchmarking yourself",
+				"why", "to see what's slow",
+				"k4", "value",
+				"k5", "value",
+				"k6", "value",
+				"k7", "value",
+				"k8", "value",
+				"k9", "value",
+				"k10", "value",
+			)
+		}
+	})
+}

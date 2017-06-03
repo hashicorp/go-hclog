@@ -150,14 +150,46 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 		z.w.WriteByte(':')
 
 		for i := 0; i < len(args); i = i + 2 {
-			val := fmt.Sprintf("%v", args[i+1])
+			var val string
 
-			var quote string
-			if strings.ContainsAny(val, " \t\n\r") {
-				quote = `"`
+			switch st := args[i+1].(type) {
+			case string:
+				val = st
+			case int:
+				val = strconv.FormatInt(int64(st), 10)
+			case int64:
+				val = strconv.FormatInt(int64(st), 10)
+			case int32:
+				val = strconv.FormatInt(int64(st), 10)
+			case int16:
+				val = strconv.FormatInt(int64(st), 10)
+			case int8:
+				val = strconv.FormatInt(int64(st), 10)
+			case uint:
+				val = strconv.FormatUint(uint64(st), 10)
+			case uint64:
+				val = strconv.FormatUint(uint64(st), 10)
+			case uint32:
+				val = strconv.FormatUint(uint64(st), 10)
+			case uint16:
+				val = strconv.FormatUint(uint64(st), 10)
+			case uint8:
+				val = strconv.FormatUint(uint64(st), 10)
+			default:
+				val = fmt.Sprintf("%v", st)
 			}
 
-			fmt.Fprintf(z.w, " %s=%s%v%s", args[i], quote, val, quote)
+			z.w.WriteByte(' ')
+			z.w.WriteString(args[i].(string))
+			z.w.WriteByte('=')
+
+			if strings.ContainsAny(val, " \t\n\r") {
+				z.w.WriteByte('"')
+				z.w.WriteString(val)
+				z.w.WriteByte('"')
+			} else {
+				z.w.WriteString(val)
+			}
 		}
 	}
 
