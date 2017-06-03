@@ -8,8 +8,8 @@ import (
 type Level int
 
 const (
-	Debug Level = 0
-	Trace Level = 1
+	Trace Level = 0
+	Debug Level = 1
 	Info  Level = 2
 	Warn  Level = 3
 	Error Level = 4
@@ -47,9 +47,18 @@ type Logger interface {
 }
 
 type LoggerOptions struct {
-	Name   string
-	Level  Level
+	// Name of the subsystem to prefix logs with
+	Name string
+
+	// The threshold for the logger. Anything less severe is supressed
+	Level Level
+
+	// Where to write the logs to. Defaults to os.Stdout if nil
 	Output io.Writer
 
+	// Control if the output should be in JSON.
+	JSONFormat bool
+
+	// Intclude file and line information in each log line
 	IncludeLocation bool
 }

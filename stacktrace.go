@@ -21,7 +21,7 @@
 package log
 
 import (
-	"bytes"
+	"bufio"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,8 +40,7 @@ var (
 	}
 )
 
-func takeStacktrace() string {
-	var buffer bytes.Buffer
+func writeStacktrace(buffer *bufio.Writer) {
 	programCounters := _stacktracePool.Get().(*programCounters)
 	defer _stacktracePool.Put(programCounters)
 
@@ -75,8 +74,6 @@ func takeStacktrace() string {
 		buffer.WriteByte(':')
 		buffer.WriteString(strconv.Itoa(int(frame.Line)))
 	}
-
-	return buffer.String()
 }
 
 func shouldIgnoreStacktraceFunction(function string) bool {

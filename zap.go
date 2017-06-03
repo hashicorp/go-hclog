@@ -26,7 +26,7 @@ func findLevel(level Level) zapcore.Level {
 }
 
 var (
-	_levelToBracket = map[zapcore.Level]string{
+	_zaplevelToBracket = map[zapcore.Level]string{
 		zapcore.DebugLevel: "[DEBUG]",
 		zapcore.InfoLevel:  "[INFO ]",
 		zapcore.WarnLevel:  "[WARN ]",
@@ -35,7 +35,7 @@ var (
 )
 
 func encodeLevel(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-	s, ok := _levelToBracket[l]
+	s, ok := _zaplevelToBracket[l]
 	if ok {
 		enc.AppendString(s)
 	} else {
@@ -43,7 +43,7 @@ func encodeLevel(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
 	}
 }
 
-func New(opts LoggerOptions) Logger {
+func NewZap(opts LoggerOptions) Logger {
 	zlevel := findLevel(opts.Level)
 	level := zap.NewAtomicLevelAt(zlevel)
 
