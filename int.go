@@ -263,7 +263,7 @@ func (z *intLogger) IsError() bool {
 func (z *intLogger) With(args ...interface{}) Logger {
 	var nz intLogger = *z
 
-	nz.implied = args
+	nz.implied = append(nz.implied, args...)
 
 	return &nz
 }
