@@ -12,7 +12,7 @@ func TestLogger(t *testing.T) {
 	t.Run("formats log entries", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		logger := New(LoggerOptions{
+		logger := New(&LoggerOptions{
 			Name:   "test",
 			Output: &buf,
 		})
@@ -32,7 +32,7 @@ func TestLogger(t *testing.T) {
 	t.Run("quotes values with spaces", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		logger := New(LoggerOptions{
+		logger := New(&LoggerOptions{
 			Name:   "test",
 			Output: &buf,
 		})
@@ -52,7 +52,7 @@ func TestLogger(t *testing.T) {
 	t.Run("outputs stack traces", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		logger := New(LoggerOptions{
+		logger := New(&LoggerOptions{
 			Name:   "test",
 			Output: &buf,
 		})
@@ -67,7 +67,7 @@ func TestLogger(t *testing.T) {
 	t.Run("includes the caller location", func(t *testing.T) {
 		var buf bytes.Buffer
 
-		logger := New(LoggerOptions{
+		logger := New(&LoggerOptions{
 			Name:            "test",
 			Output:          &buf,
 			IncludeLocation: true,
@@ -91,7 +91,7 @@ func BenchmarkLogger(b *testing.B) {
 	b.Run("info with 10 pairs", func(b *testing.B) {
 		var buf bytes.Buffer
 
-		logger := New(LoggerOptions{
+		logger := New(&LoggerOptions{
 			Name:            "test",
 			Output:          &buf,
 			IncludeLocation: true,

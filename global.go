@@ -11,8 +11,9 @@ var (
 	// The options used to create the Default logger. These are
 	// read only when the Default logger is created, so set them
 	// as soon as the process starts.
-	DefaultOptions LoggerOptions = LoggerOptions{
-		Level: Info,
+	DefaultOptions = &LoggerOptions{
+		Level:  DefaultLevel,
+		Output: DefaultOutput,
 	}
 )
 

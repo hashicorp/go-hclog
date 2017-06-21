@@ -24,11 +24,19 @@ var (
 	}
 )
 
-func New(opts LoggerOptions) Logger {
+func New(opts *LoggerOptions) Logger {
+	if opts == nil {
+		opts = &LoggerOptions{}
+	}
 
 	output := opts.Output
 	if output == nil {
-		output = os.Stdout
+		output = os.Stderr
+	}
+
+	level := opts.Level
+	if level == NoLevel {
+		level = DefaultLevel
 	}
 
 	return &intLogger{
@@ -37,7 +45,7 @@ func New(opts LoggerOptions) Logger {
 		caller: opts.IncludeLocation,
 		name:   opts.Name,
 		w:      bufio.NewWriter(output),
-		level:  opts.Level,
+		level:  level,
 	}
 }
 

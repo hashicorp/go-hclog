@@ -3,30 +3,40 @@ package log
 import (
 	"io"
 	"log"
+	"os"
+)
+
+var (
+	DefaultOutput = os.Stderr
+	DefaultLevel  = Info
 )
 
 type Level int
 
 const (
-	Trace Level = 0
-	Debug Level = 1
-	Info  Level = 2
-	Warn  Level = 3
-	Error Level = 4
+	// This is a special level used to indicate that no level has been
+	// set and allow for a default to be used.
+	NoLevel Level = 0
+
+	Trace Level = 1
+	Debug Level = 2
+	Info  Level = 3
+	Warn  Level = 4
+	Error Level = 5
 )
 
 type Logger interface {
 	// Args are alternating key, val pairs
 	// keys must be strings
 	// vals can be any type, but display is implementation specific
-	Debug(msg string, args ...interface{})
 	Trace(msg string, args ...interface{})
+	Debug(msg string, args ...interface{})
 	Info(msg string, args ...interface{})
 	Warn(msg string, args ...interface{})
 	Error(msg string, args ...interface{})
 
-	IsDebug() bool
 	IsTrace() bool
+	IsDebug() bool
 	IsInfo() bool
 	IsWarn() bool
 	IsError() bool
