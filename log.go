@@ -59,9 +59,15 @@ type Logger interface {
 	Stacktrace(msg string, args ...interface{})
 
 	// Return a value that conforms to the stdlib log.Logger interface
-	// if inferLevels is set, then check for strings like [ERROR], [ERR]
-	// [TRACE], [WARN], [INFO], [DEBUG] and strip it off before reapplying it.
-	StandardLogger(inferLevels bool) *log.Logger
+	StandardLogger(opts *StandardLoggerOptions) *log.Logger
+}
+
+type StandardLoggerOptions struct {
+	// Indicate that some minimal parsing should be done on strings to try
+	// and detect their level and re-emit them.
+	// This supports the strings like [ERROR], [ERR] [TRACE], [WARN], [INFO],
+	// [DEBUG] and strip it off before reapplying it.
+	InferLevels bool
 }
 
 type LoggerOptions struct {

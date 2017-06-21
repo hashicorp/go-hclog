@@ -350,6 +350,10 @@ func (z *intLogger) Stacktrace(msg string, args ...interface{}) {
 	z.w.Flush()
 }
 
-func (z *intLogger) StandardLogger(inferLevels bool) *log.Logger {
-	return log.New(&stdlogAdapter{z, inferLevels}, "", 0)
+func (z *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
+	if opts == nil {
+		opts = &StandardLoggerOptions{}
+	}
+
+	return log.New(&stdlogAdapter{z, opts.InferLevels}, "", 0)
 }
