@@ -16,13 +16,13 @@ type Level int
 const (
 	// This is a special level used to indicate that no level has been
 	// set and allow for a default to be used.
-	NoLevel Level = 0
+	NoLevel Level = iota
 
-	Trace Level = 1
-	Debug Level = 2
-	Info  Level = 3
-	Warn  Level = 4
-	Error Level = 5
+	Trace
+	Debug
+	Info
+	Warn
+	Error
 )
 
 type Logger interface {

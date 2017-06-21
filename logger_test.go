@@ -61,7 +61,7 @@ func TestLogger(t *testing.T) {
 
 		lines := strings.Split(buf.String(), "\n")
 
-		assert.Equal(t, "github.com/hashicorp/log.(*intLogger).Stacktrace", lines[1])
+		assert.Equal(t, "github.com/hashicorp/go-log.(*intLogger).Stacktrace", lines[1])
 	})
 
 	t.Run("includes the caller location", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO ] log/logger_test.go:76: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO ] go-log/logger_test.go:76: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 }
 
