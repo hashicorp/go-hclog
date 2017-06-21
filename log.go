@@ -44,11 +44,19 @@ type Logger interface {
 	// Creates a sublogger that will always have the given key/value pairs
 	With(args ...interface{}) Logger
 
-	// Create a logger that will prepend the name string on the front of all messages
+	// Create a logger that will prepend the name string on the front of all messages.
+	// If the logger already has a name, the new value will be appended to the current
+	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// without losing context.
 	Named(name string) Logger
 
+	// Create a logger that will prepend the name string on the front of all messages.
+	// This sets the name of the logger to the value directly, unlike Named which honor
+	// the current name as well.
+	ResetNamed(name string) Logger
+
 	// Log the arguments and then a stacktrace
-	Stacktrace(args ...interface{})
+	Stacktrace(msg string, args ...interface{})
 
 	// Return a value that conforms to the stdlib log.Logger interface
 	// if inferLevels is set, then check for strings like [ERROR], [ERR]

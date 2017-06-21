@@ -318,7 +318,15 @@ func (z *intLogger) Named(name string) Logger {
 	return &nz
 }
 
-func (z *intLogger) Stacktrace(args ...interface{}) {
+func (z *intLogger) ResetNamed(name string) Logger {
+	var nz intLogger = *z
+
+	nz.name = name
+
+	return &nz
+}
+
+func (z *intLogger) Stacktrace(msg string, args ...interface{}) {
 	t := time.Now()
 
 	z.m.Lock()
@@ -333,9 +341,9 @@ func (z *intLogger) Stacktrace(args ...interface{}) {
 
 		args = append(args, "stacktrace", buf.String())
 
-		z.logJson(t, Trace, "", args...)
+		z.logJson(t, Trace, msg, args...)
 	} else {
-		z.log(t, Trace, "", args...)
+		z.log(t, Trace, msg, args...)
 		writeStacktrace(z.w)
 	}
 
