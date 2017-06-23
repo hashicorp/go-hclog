@@ -55,9 +55,6 @@ type Logger interface {
 	// the current name as well.
 	ResetNamed(name string) Logger
 
-	// Log the arguments and then a stacktrace
-	Stacktrace(msg string, args ...interface{})
-
 	// Return a value that conforms to the stdlib log.Logger interface
 	StandardLogger(opts *StandardLoggerOptions) *log.Logger
 }

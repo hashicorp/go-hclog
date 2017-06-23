@@ -21,7 +21,7 @@
 package log
 
 import (
-	"bufio"
+	"bytes"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,9 +40,21 @@ var (
 	}
 )
 
-func writeStacktrace(buffer *bufio.Writer) {
+// A stacktrace gathered by a previous call to log.Stacktrace. If passed
+// to a logging function, the stacktrace will be appended.
+type CapturedStacktrace string
+
+// Gather a stacktrace of the current goroutine and return it to be passed
+// to a logging function.
+func Stacktrace() CapturedStacktrace {
+	return CapturedStacktrace(takeStacktrace())
+}
+
+func takeStacktrace() string {
 	programCounters := _stacktracePool.Get().(*programCounters)
 	defer _stacktracePool.Put(programCounters)
+
+	var buffer bytes.Buffer
 
 	for {
 		// Skip the call to runtime.Counters and takeStacktrace so that the
@@ -74,6 +86,8 @@ func writeStacktrace(buffer *bufio.Writer) {
 		buffer.WriteByte(':')
 		buffer.WriteString(strconv.Itoa(int(frame.Line)))
 	}
+
+	return buffer.String()
 }
 
 func shouldIgnoreStacktraceFunction(function string) bool {

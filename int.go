@@ -150,13 +150,22 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 
 	args = append(z.implied, args...)
 
+	var stacktrace CapturedStacktrace
+
 	if args != nil && len(args) > 0 {
 		if len(args)%2 != 0 {
-			args = append(args, "<unknown>")
+			cs, ok := args[len(args)-1].(CapturedStacktrace)
+			if ok {
+				args = args[:len(args)-1]
+				stacktrace = cs
+			} else {
+				args = append(args, "<unknown>")
+			}
 		}
 
 		z.w.WriteByte(':')
 
+	FOR:
 		for i := 0; i < len(args); i = i + 2 {
 			var val string
 
@@ -183,6 +192,9 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 				val = strconv.FormatUint(uint64(st), 10)
 			case uint8:
 				val = strconv.FormatUint(uint64(st), 10)
+			case CapturedStacktrace:
+				stacktrace = st
+				continue FOR
 			default:
 				val = fmt.Sprintf("%v", st)
 			}
@@ -202,6 +214,10 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 	}
 
 	z.w.WriteString("\n")
+
+	if stacktrace != "" {
+		z.w.WriteString(string(stacktrace))
+	}
 }
 
 func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interface{}) {
@@ -239,9 +255,14 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 	}
 
 	if args != nil && len(args) > 0 {
-
 		if len(args)%2 != 0 {
-			args = append(args, "<unknown>")
+			cs, ok := args[len(args)-1].(CapturedStacktrace)
+			if ok {
+				args = args[:len(args)-1]
+				vals["stacktrace"] = cs
+			} else {
+				args = append(args, "<unknown>")
+			}
 		}
 
 		for i := 0; i < len(args); i = i + 2 {
@@ -326,30 +347,9 @@ func (z *intLogger) ResetNamed(name string) Logger {
 	return &nz
 }
 
-func (z *intLogger) Stacktrace(msg string, args ...interface{}) {
-	t := time.Now()
-
-	z.m.Lock()
-	defer z.m.Unlock()
-
-	if z.json {
-		var buf bytes.Buffer
-
-		sw := bufio.NewWriter(&buf)
-		writeStacktrace(sw)
-		sw.Flush()
-
-		args = append(args, "stacktrace", buf.String())
-
-		z.logJson(t, Trace, msg, args...)
-	} else {
-		z.log(t, Trace, msg, args...)
-		writeStacktrace(z.w)
-	}
-
-	z.w.Flush()
-}
-
+// Create a *log.Logger that will send it's data through this Logger. This
+// allows packages that expect to be using the standard library log to actually
+// use this logger.
 func (z *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 	if opts == nil {
 		opts = &StandardLoggerOptions{}
