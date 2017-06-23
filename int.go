@@ -2,7 +2,6 @@ package log
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,6 +23,7 @@ var (
 	}
 )
 
+// Given the options (nil for defaults), create a new Logger
 func New(opts *LoggerOptions) Logger {
 	if opts == nil {
 		opts = &LoggerOptions{}
@@ -49,6 +49,8 @@ func New(opts *LoggerOptions) Logger {
 	}
 }
 
+// The internal logger implementation. Internal in that it is defined entirely
+// by this package.
 type intLogger struct {
 	json   bool
 	caller bool
@@ -63,8 +65,11 @@ type intLogger struct {
 	implied []interface{}
 }
 
+// Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}
 
+// The time format to use for logging. This is a version of RFC3339 that
+// contains millisecond precision
 const TimeFormat = "2006-01-02T15:04:05.000Z0700"
 
 // Log a message and a set of key/value pairs if the given level is at
@@ -88,6 +93,7 @@ func (z *intLogger) Log(level Level, msg string, args ...interface{}) {
 	z.w.Flush()
 }
 
+// Cleanup a path by returning the last 2 segments of the path only.
 func trimCallerPath(path string) string {
 	// lovely borrowed from zap
 	// nb. To make sure we trim the path correctly on Windows too, we
@@ -118,6 +124,7 @@ func trimCallerPath(path string) string {
 	return path[idx+1:]
 }
 
+// Non-JSON logging format function
 func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
 	z.w.WriteString(t.Format(TimeFormat))
 	z.w.WriteByte(' ')
@@ -220,6 +227,7 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 	}
 }
 
+// JSON logging function
 func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interface{}) {
 	vals := map[string]interface{}{
 		"@message":   msg,
@@ -281,46 +289,59 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 	}
 }
 
+// Emit the message and args at DEBUG level
 func (z *intLogger) Debug(msg string, args ...interface{}) {
 	z.Log(Debug, msg, args...)
 }
 
+// Emit the message and args at TRACE level
 func (z *intLogger) Trace(msg string, args ...interface{}) {
 	z.Log(Trace, msg, args...)
 }
 
+// Emit the message and args at INFO level
 func (z *intLogger) Info(msg string, args ...interface{}) {
 	z.Log(Info, msg, args...)
 }
 
+// Emit the message and args at WARN level
 func (z *intLogger) Warn(msg string, args ...interface{}) {
 	z.Log(Warn, msg, args...)
 }
 
+// Emit the message and args at ERROR level
 func (z *intLogger) Error(msg string, args ...interface{}) {
 	z.Log(Error, msg, args...)
 }
 
+// Indicate that the logger would emit TRACE level logs
 func (z *intLogger) IsTrace() bool {
 	return z.level >= Trace
 }
 
+// Indicate that the logger would emit DEBUG level logs
 func (z *intLogger) IsDebug() bool {
 	return z.level >= Debug
 }
 
+// Indicate that the logger would emit INFO level logs
 func (z *intLogger) IsInfo() bool {
 	return z.level >= Info
 }
 
+// Indicate that the logger would emit WARN level logs
 func (z *intLogger) IsWarn() bool {
 	return z.level >= Warn
 }
 
+// Indicate that the logger would emit ERROR level logs
 func (z *intLogger) IsError() bool {
 	return z.level >= Error
 }
 
+// Return a sub-Logger for which every emitted log message will contain
+// the given key/value pairs. This is used to create a context specific
+// Logger.
 func (z *intLogger) With(args ...interface{}) Logger {
 	var nz intLogger = *z
 
@@ -329,6 +350,8 @@ func (z *intLogger) With(args ...interface{}) Logger {
 	return &nz
 }
 
+// Create a new sub-Logger that a name decending from the current name.
+// This is used to create a subsystem specific Logger.
 func (z *intLogger) Named(name string) Logger {
 	var nz intLogger = *z
 
@@ -339,6 +362,9 @@ func (z *intLogger) Named(name string) Logger {
 	return &nz
 }
 
+// Create a new sub-Logger with an explicit name. This ignores the current
+// name. This is used to create a standalone logger that doesn't fall
+// within the normal hierarchy.
 func (z *intLogger) ResetNamed(name string) Logger {
 	var nz intLogger = *z
 

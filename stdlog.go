@@ -5,11 +5,16 @@ import (
 	"strings"
 )
 
+// Provides a io.Writer to shim the data out of *log.Logger
+// and back into our Logger. This is basically the only way to
+// build upon *log.Logger.
 type stdlogAdapter struct {
 	hl          Logger
 	inferLevels bool
 }
 
+// Take the data, infer the levels if configured, and send it through
+// a regular Logger
 func (s *stdlogAdapter) Write(data []byte) (int, error) {
 	str := string(bytes.TrimRight(data, " \t\n"))
 
@@ -36,6 +41,7 @@ func (s *stdlogAdapter) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// Detect, based on conventions, what log level this is
 func (s *stdlogAdapter) pickLevel(str string) (Level, string) {
 	switch {
 	case strings.HasPrefix(str, "[DEBUG]"):

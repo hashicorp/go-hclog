@@ -18,27 +18,57 @@ const (
 	// set and allow for a default to be used.
 	NoLevel Level = 0
 
+	// The most verbose level. Intended to be used for the tracing of actions
+	// in code, such as function enters/exits, etc.
 	Trace Level = 1
+
+	// For programmer lowlevel analysis.
 	Debug Level = 2
-	Info  Level = 3
-	Warn  Level = 4
+
+	// For information about steady state operations.
+	Info Level = 3
+
+	// For information about rare but handled events.
+	Warn Level = 4
+
+	// For information about unrecoverable events.
 	Error Level = 5
 )
 
+// The main Logger interface. All code should code against this interface only.
 type Logger interface {
 	// Args are alternating key, val pairs
 	// keys must be strings
 	// vals can be any type, but display is implementation specific
+	// Emit a message and key/value pairs at the TRACE level
 	Trace(msg string, args ...interface{})
+
+	// Emit a message and key/value pairs at the DEBUG level
 	Debug(msg string, args ...interface{})
+
+	// Emit a message and key/value pairs at the INFO level
 	Info(msg string, args ...interface{})
+
+	// Emit a message and key/value pairs at the WARN level
 	Warn(msg string, args ...interface{})
+
+	// Emit a message and key/value pairs at the ERROR level
 	Error(msg string, args ...interface{})
 
+	// Indicate if TRACE logs would be emitted. This and the other Is* guards
+	// are used to elide expensive logging code based on the current level.
 	IsTrace() bool
+
+	// Indicate if DEBUG logs would be emitted. This and the other Is* guards
 	IsDebug() bool
+
+	// Indicate if INFO logs would be emitted. This and the other Is* guards
 	IsInfo() bool
+
+	// Indicate if WARN logs would be emitted. This and the other Is* guards
 	IsWarn() bool
+
+	// Indicate if ERROR logs would be emitted. This and the other Is* guards
 	IsError() bool
 
 	// Creates a sublogger that will always have the given key/value pairs
