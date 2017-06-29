@@ -57,15 +57,15 @@ func TestHelper(t *testing.T) {
 			Caller string `json:"@caller"`
 		}
 
-		l := &LogData{}
+		logData := &LogData{}
 
-		if err := json.Unmarshal([]byte(str), l); err != nil {
+		if err := json.Unmarshal([]byte(str), logData); err != nil {
 			t.Fatalf("Failed to convert JSON log data into struct: %s", err)
 		}
 
 		search := "github.com/hashicorp/go-log"
-		dataIdx := strings.Index(l.Caller, search)
-		location := l.Caller[dataIdx+len(search)+1:]
+		dataIdx := strings.Index(logData.Caller, search)
+		location := logData.Caller[dataIdx+len(search)+1:]
 
 		assert.Equal(t, "logger_line_test.go:52", location)
 	})
