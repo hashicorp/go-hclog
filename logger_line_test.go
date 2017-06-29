@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ func WrapperFunc(logger Logger, message string) {
 }
 
 func TestHelper(t *testing.T) {
-	t.Run("formats log entries", func(t *testing.T) {
+	t.Run("uses Helper()to change caller location", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
@@ -25,7 +26,7 @@ func TestHelper(t *testing.T) {
 
 		// The test is going to assert based on the LINE NUMBER OF THIS CALL
 		// so if you edit lines above you will need to change the assert below!
-		logger.Info("this is test", "who", "programmer", "why", "testing")
+		WrapperFunc(logger, "sup")
 
 		str := buf.String()
 
@@ -33,7 +34,40 @@ func TestHelper(t *testing.T) {
 
 		rest := str[dataIdx+1:]
 
-		assert.Equal(t, "[INFO ] go-log/logger_line_test.go:28: test: this is test: who=programmer why=testing\n", rest)
+		assert.Equal(t, "[INFO ] go-log/logger_line_test.go:29: test: sup\n", rest)
+	})
+
+	t.Run("uses Helper() to change caller location with JSON format", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:            "test",
+			Output:          &buf,
+			IncludeLocation: true,
+			JSONFormat:      true,
+		})
+
+		// The test is going to assert based on the LINE NUMBER OF THIS CALL
+		// so if you edit lines above you will need to change the assert below!
+		WrapperFunc(logger, "sup JSON")
+
+		str := buf.String()
+
+		type LogData struct {
+			Caller string `json:"@caller"`
+		}
+
+		l := &LogData{}
+
+		if err := json.Unmarshal([]byte(str), l); err != nil {
+			t.Fatalf("Failed to convert JSON log data into struct: %s", err)
+		}
+
+		search := "github.com/hashicorp/go-log"
+		dataIdx := strings.Index(l.Caller, search)
+		location := l.Caller[dataIdx+len(search)+1:]
+
+		assert.Equal(t, "logger_line_test.go:52", location)
 	})
 
 }
