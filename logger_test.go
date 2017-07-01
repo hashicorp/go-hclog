@@ -1,4 +1,4 @@
-package log
+package hclog
 
 import (
 	"bytes"
@@ -64,7 +64,7 @@ func TestLogger(t *testing.T) {
 
 		require.True(t, len(lines) > 1)
 
-		assert.Equal(t, "github.com/hashicorp/go-log.Stacktrace", lines[1])
+		assert.Equal(t, "github.com/hashicorp/go-hclog.Stacktrace", lines[1])
 	})
 
 	t.Run("outputs stack traces with it's given a name", func(t *testing.T) {
@@ -81,7 +81,7 @@ func TestLogger(t *testing.T) {
 
 		require.True(t, len(lines) > 1)
 
-		assert.Equal(t, "github.com/hashicorp/go-log.Stacktrace", lines[1])
+		assert.Equal(t, "github.com/hashicorp/go-hclog.Stacktrace", lines[1])
 	})
 
 	t.Run("includes the caller location", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO ] go-log/logger_test.go:96: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO ] go-hclog/logger_test.go:96: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 }
 

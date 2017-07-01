@@ -1,10 +1,10 @@
-# go-log
+# go-hclog
 
 [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)][godocs]
 
-[godocs]: https://godoc.org/github.com/hashicorp/go-log
+[godocs]: https://godoc.org/github.com/hashicorp/go-hclog
 
-`go-log` is a package for Go that provides a simple key/value logging
+`go-hclog` is a package for Go that provides a simple key/value logging
 interface for use in development and production environments.
 
 It provides logging levels that provide decreased output based upon the
@@ -18,10 +18,10 @@ JSON output mode for production.
 
 ## Installation and Docs
 
-Install using `go get github.com/hashicorp/go-log`.
+Install using `go get github.com/hashicorp/go-hclog`.
 
 Full documentation is available at
-http://godoc.org/github.com/hashicorp/go-log
+http://godoc.org/github.com/hashicorp/go-hclog
 
 ## Usage
 
