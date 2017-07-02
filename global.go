@@ -1,6 +1,7 @@
 package hclog
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -31,4 +32,10 @@ func Default() Logger {
 // A short alias for Default()
 func L() Logger {
 	return Default()
+}
+
+// Printf follows the same semantics as log.Printf in the stdlib but uses the
+// default logger.
+func Printf(format string, args ...interface{}) {
+	L().Info(fmt.Sprintf(format, args...))
 }
