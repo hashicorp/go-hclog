@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 var (
@@ -38,7 +39,7 @@ const (
 // LevelFromString returns a Level type for the named log level, or "NoLevel" if
 // the level string is invalid. This facilitates setting the log level via
 // config or environment variable by name in a predictable way.
-func LevelFromString(levelStr string) int {
+func LevelFromString(levelStr string) Level {
 	// We don't care about case. Accept "INFO" or "info"
 	levelStr = strings.ToLower(levelStr)
 	switch levelStr {
