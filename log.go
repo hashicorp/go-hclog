@@ -35,6 +35,28 @@ const (
 	Error Level = 5
 )
 
+// LevelFromString returns a Level type for the named log level, or "NoLevel" if
+// the level string is invalid. This facilitates setting the log level via
+// config or environment variable by name in a predictable way.
+func LevelFromString(levelStr string) int {
+	// We don't care about case. Accept "INFO" or "info"
+	levelStr = strings.ToLower(levelStr)
+	switch levelStr {
+	case "trace":
+		return Trace
+	case "debug":
+		return Debug
+	case "info":
+		return Info
+	case "warn":
+		return Warn
+	case "error":
+		return Error
+	default:
+		return NoLevel
+	}
+}
+
 // The main Logger interface. All code should code against this interface only.
 type Logger interface {
 	// Args are alternating key, val pairs
