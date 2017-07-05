@@ -27,36 +27,49 @@ http://godoc.org/github.com/hashicorp/go-hclog
 
 ### Use the global logger
 
-	hclog.Default().Info("hello world")
+```go
+hclog.Default().Info("hello world")
+```
 
-	// 2017-07-05T16:15:55.167-0700 [INFO ] hello world
+```text
+2017-07-05T16:15:55.167-0700 [INFO ] hello world
+```
 
 (Note timestamps are removed in future examples for brevity.)
 
 ### Create a new logger
 
-	appLogger := hclog.New(&hclog.LoggerOptions{
-		Name:  "my-app",
-		Level: hclog.LevelFromString("DEBUG"),
-	})
+```go
+appLogger := hclog.New(&hclog.LoggerOptions{
+	Name:  "my-app",
+	Level: hclog.LevelFromString("DEBUG"),
+})
+```
 
 ### Emit an Info level message with 2 key/value pairs
 
-	input := "5.5"
-	_, err := strconv.ParseInt(input, 10, 32)
-	if err != nil {
-		appLogger.Info("Invalid input for ParseInt", "input", input, "error", err)
-	}
+```go
+input := "5.5"
+_, err := strconv.ParseInt(input, 10, 32)
+if err != nil {
+	appLogger.Info("Invalid input for ParseInt", "input", input, "error", err)
+}
+```
 
-	// ... [INFO ] my-app: Invalid input for ParseInt: input=5.5 error="strconv.ParseInt: parsing "5.5": invalid syntax"
-
+```text
+... [INFO ] my-app: Invalid input for ParseInt: input=5.5 error="strconv.ParseInt: parsing "5.5": invalid syntax"
+```
 
 ### Create a new Logger for a major subsystem
 
-	subsystemLogger := appLogger.Named("transport")
-	subsystemLogger.Info("we are transporting something")
+```go
+subsystemLogger := appLogger.Named("transport")
+subsystemLogger.Info("we are transporting something")
+```
 
-	// ... [INFO ] my-app.transport: we are transporting something
+```text
+... [INFO ] my-app.transport: we are transporting something
+```
 
 Notice that logs emitted by `subsystemLogger` contain `my-app.transport`,
 reflecting both the application and subsystem names.
@@ -66,11 +79,15 @@ reflecting both the application and subsystem names.
 Using `With()` will include a specific key-value pair in all messages emitted
 by that logger.
 
-	requestID := "5fb446b6-6eba-821d-df1b-cd7501b6a363"
-	requestLogger := subsystemLogger.With("request", requestID)
-	requestLogger.Info("we are transporting a request")
+```go
+requestID := "5fb446b6-6eba-821d-df1b-cd7501b6a363"
+requestLogger := subsystemLogger.With("request", requestID)
+requestLogger.Info("we are transporting a request")
+```
 
-	// ... [INFO ] my-app.transport: we are transporting a request: request=5fb446b6-6eba-821d-df1b-cd7501b6a363
+```text
+... [INFO ] my-app.transport: we are transporting a request: request=5fb446b6-6eba-821d-df1b-cd7501b6a363
+```
 
 This allows sub Loggers to be context specific without having to thread that
 into all the callers.
@@ -81,13 +98,18 @@ If you want to use the standard library's `log.Logger` interface you can wrap
 `hclog.Logger` by calling the `StandardLogger()` method. This allows you to use
 it with the familiar `Println()`, `Printf()`, etc. For example:
 
-	stdLogger := appLogger.StandardLogger(&hclog.StandardLoggerOptions{
-		InferLevels: true,
-	})
-	// Printf() is provided by stdlib log.Logger interface, not hclog.Logger
-	stdLogger.Printf("[DEBUG] %+v", stdLogger)
+```go
+stdLogger := appLogger.StandardLogger(&hclog.StandardLoggerOptions{
+	InferLevels: true,
+})
+// Printf() is provided by stdlib log.Logger interface, not hclog.Logger
+stdLogger.Printf("[DEBUG] %+v", stdLogger)
+```
+
+```text
+... [DEBUG] my-app: &{mu:{state:0 sema:0} prefix: flag:0 out:0xc42000a0a0 buf:[]}
+```
 
 Notice that if `appLogger` is initialized with the `INFO` log level _and_ you
 specify `InferLevels: true`, you will not see any output here. You must change
 `appLogger` to `DEBUG` to see output. See the docs for more information.
-
