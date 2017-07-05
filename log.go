@@ -41,7 +41,7 @@ const (
 // config or environment variable by name in a predictable way.
 func LevelFromString(levelStr string) Level {
 	// We don't care about case. Accept "INFO" or "info"
-	levelStr = strings.ToLower(levelStr)
+	levelStr = strings.ToLower(strings.TrimSpace(levelStr))
 	switch levelStr {
 	case "trace":
 		return Trace
