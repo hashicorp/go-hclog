@@ -25,68 +25,91 @@ http://godoc.org/github.com/hashicorp/go-hclog
 
 ## Usage
 
-**Create a new logger**
+### Use the global logger
 
 ```go
-logger := log.New(&LoggerOptions{Name: "prog", Level: log.INFO})
+hclog.Default().Info("hello world")
 ```
 
-**Use the global logger**
-```go
-log.Default()
+```text
+2017-07-05T16:15:55.167-0700 [INFO ] hello world
 ```
 
-or
+(Note timestamps are removed in future examples for brevity.)
+
+### Create a new logger
 
 ```go
-log.Default()
+appLogger := hclog.New(&hclog.LoggerOptions{
+	Name:  "my-app",
+	Level: hclog.LevelFromString("DEBUG"),
+})
 ```
 
-**Emit an Info level message with 2 key/value pairs**
+### Emit an Info level message with 2 key/value pairs
 
 ```go
-host := current()
-if err := op(); err != nil {
-  logger.Info("host encountered an error", "host", host, "error", err)
+input := "5.5"
+_, err := strconv.ParseInt(input, 10, 32)
+if err != nil {
+	appLogger.Info("Invalid input for ParseInt", "input", input, "error", err)
 }
 ```
 
-**Create a new Logger for a major subsystem**
-
-```go
-sub := logger.Named("transport")
+```text
+... [INFO ] my-app: Invalid input for ParseInt: input=5.5 error="strconv.ParseInt: parsing "5.5": invalid syntax"
 ```
 
-Logs emitted by `sub` will contain the name field of `prog.transport`,
-where `prog` is the name that `logger` currently has.
-
-**Create a new Logger with fixed key/value pairs**
+### Create a new Logger for a major subsystem
 
 ```go
-sub := logger.With("request", requestId)
+subsystemLogger := appLogger.Named("transport")
+subsystemLogger.Info("we are transporting something")
 ```
 
-Logs emitted by `sub` will always contain the key `requset` with the given
-value. This allows sub Loggers to be context specific without having to
-thread that into all the callers.
+```text
+... [INFO ] my-app.transport: we are transporting something
+```
 
-**Use this with code that uses the standard library logger**
+Notice that logs emitted by `subsystemLogger` contain `my-app.transport`,
+reflecting both the application and subsystem names.
+
+### Create a new Logger with fixed key/value pairs
+
+Using `With()` will include a specific key-value pair in all messages emitted
+by that logger.
 
 ```go
-import golog 'log'
-
-func processData(l *golog.Log)
-
-processData(
-  log.Default().StandardLogger(
-    &StandardLoggerOptions{
-      InfereLevels: true,
-    },
-  ),
-)
+requestID := "5fb446b6-6eba-821d-df1b-cd7501b6a363"
+requestLogger := subsystemLogger.With("request", requestID)
+requestLogger.Info("we are transporting a request")
 ```
 
-This allows this logger to be used in places where the standard library
-`*log.Log` is expected. Additionally, it can infer the log levels from
-commonly used prefixes used. See the docs for more information.
+```text
+... [INFO ] my-app.transport: we are transporting a request: request=5fb446b6-6eba-821d-df1b-cd7501b6a363
+```
 
+This allows sub Loggers to be context specific without having to thread that
+into all the callers.
+
+### Use this with code that uses the standard library logger
+
+If you want to use the standard library's `log.Logger` interface you can wrap
+`hclog.Logger` by calling the `StandardLogger()` method. This allows you to use
+it with the familiar `Println()`, `Printf()`, etc. For example:
+
+```go
+stdLogger := appLogger.StandardLogger(&hclog.StandardLoggerOptions{
+	InferLevels: true,
+})
+// Printf() is provided by stdlib log.Logger interface, not hclog.Logger
+stdLogger.Printf("[DEBUG] %+v", stdLogger)
+```
+
+```text
+... [DEBUG] my-app: &{mu:{state:0 sema:0} prefix: flag:0 out:0xc42000a0a0 buf:[]}
+```
+
+Notice that if `appLogger` is initialized with the `INFO` log level _and_ you
+specify `InferLevels: true`, you will not see any output here. You must change
+`appLogger` to `DEBUG` to see output. See the docs for more information.
