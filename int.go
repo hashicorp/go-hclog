@@ -316,27 +316,27 @@ func (z *intLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (z *intLogger) IsTrace() bool {
-	return z.level >= Trace
+	return z.level == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (z *intLogger) IsDebug() bool {
-	return z.level >= Debug
+	return z.level <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (z *intLogger) IsInfo() bool {
-	return z.level >= Info
+	return z.level <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (z *intLogger) IsWarn() bool {
-	return z.level >= Warn
+	return z.level <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (z *intLogger) IsError() bool {
-	return z.level >= Error
+	return z.level <= Error
 }
 
 // Return a sub-Logger for which every emitted log message will contain
