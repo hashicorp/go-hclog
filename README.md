@@ -16,6 +16,14 @@ exposed as arguments to the logging functions for simplicity.
 It provides a human readable output mode for use in development as well as
 JSON output mode for production.
 
+## Stability Note
+
+While this library is fully open source and HashiCorp will be maintaining it
+(since we are and will be making extensive use of it), the API and output
+format is subject to minor changes as we fully bake and vet it in our projects.
+This notice will be removed once it's fully integrated into our major projects
+and no further changes are anticipated.
+
 ## Installation and Docs
 
 Install using `go get github.com/hashicorp/go-hclog`.
