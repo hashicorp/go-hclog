@@ -137,7 +137,17 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 	}
 
 	if z.caller {
-		if _, file, line, ok := runtime.Caller(3); ok {
+		skipLevel := 3
+
+		for {
+			if _, ok := helpers[callerName(skipLevel)]; ok {
+				skipLevel++
+			} else {
+				break
+			}
+		}
+
+		if _, file, line, ok := runtime.Caller(skipLevel); ok {
 			z.w.WriteByte(' ')
 			z.w.WriteString(trimCallerPath(file))
 			z.w.WriteByte(':')
@@ -257,8 +267,19 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 	}
 
 	if z.caller {
-		if _, file, line, ok := runtime.Caller(3); ok {
+		skipLevel := 3
+
+		for {
+			if _, ok := helpers[callerName(skipLevel)]; ok {
+				skipLevel++
+			} else {
+				break
+			}
+		}
+
+		if _, file, line, ok := runtime.Caller(skipLevel); ok {
 			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
+
 		}
 	}
 
