@@ -279,7 +279,11 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 				// without injecting into logs...
 				continue
 			}
-			vals[args[i].(string)] = args[i+1]
+			val := args[i+1]
+			if _, ok := args[i+1].(error); ok {
+				val = args[i+1].(error).Error()
+			}
+			vals[args[i].(string)] = val
 		}
 	}
 

@@ -2,6 +2,8 @@ package hclog
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -103,7 +105,55 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO ] go-hclog/logger_test.go:96: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO ] go-hclog/logger_test.go:98: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+	})
+}
+
+func TestLogger_JSON(t *testing.T) {
+	t.Run("json formatting", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, raw["@message"], "this is test")
+		assert.Equal(t, raw["who"], "programmer")
+		assert.Equal(t, raw["why"], "testing is fun")
+	})
+	t.Run("json formatting error type", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+		})
+
+		errMsg := errors.New("this is an error")
+		logger.Info("this is test", "who", "programmer", "err", errMsg)
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, raw["@message"], "this is test")
+		assert.Equal(t, raw["who"], "programmer")
+		assert.Equal(t, raw["err"], errMsg.Error())
 	})
 }
 
