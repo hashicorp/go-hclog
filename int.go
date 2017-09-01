@@ -2,6 +2,7 @@ package hclog
 
 import (
 	"bufio"
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -281,7 +282,12 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 			}
 			val := args[i+1]
 			if err, ok := args[i+1].(error); ok {
-				val = err.Error()
+				switch err.(type) {
+				case json.Marshaler, encoding.TextMarshaler:
+					val = err
+				default:
+					val = err.Error()
+				}
 			}
 			vals[args[i].(string)] = val
 		}
