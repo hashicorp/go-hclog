@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -106,7 +107,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO ] go-hclog/logger_test.go:99: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO ] go-hclog/logger_test.go:100: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 }
 
@@ -129,9 +130,9 @@ func TestLogger_JSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, raw["@message"], "this is test")
-		assert.Equal(t, raw["who"], "programmer")
-		assert.Equal(t, raw["why"], "testing is fun")
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "programmer", raw["who"])
+		assert.Equal(t, "testing is fun", raw["why"])
 	})
 	t.Run("json formatting error type", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -152,9 +153,9 @@ func TestLogger_JSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, raw["@message"], "this is test")
-		assert.Equal(t, raw["who"], "programmer")
-		assert.Equal(t, raw["err"], errMsg.Error())
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "programmer", raw["who"])
+		assert.Equal(t, errMsg.Error(), raw["err"])
 	})
 	t.Run("json formatting custom error type json marshaler", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -166,6 +167,15 @@ func TestLogger_JSON(t *testing.T) {
 		})
 
 		errMsg := &customErrJSON{"this is an error"}
+		rawMsg, err := errMsg.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedMsg, err := strconv.Unquote(string(rawMsg))
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		logger.Info("this is test", "who", "programmer", "err", errMsg)
 
 		b := buf.Bytes()
@@ -175,9 +185,9 @@ func TestLogger_JSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, raw["@message"], "this is test")
-		assert.Equal(t, raw["who"], "programmer")
-		assert.Equal(t, raw["err"], errMsg.Error())
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "programmer", raw["who"])
+		assert.Equal(t, expectedMsg, raw["err"])
 	})
 	t.Run("json formatting custom error type text marshaler", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -189,6 +199,12 @@ func TestLogger_JSON(t *testing.T) {
 		})
 
 		errMsg := &customErrText{"this is an error"}
+		rawMsg, err := errMsg.MarshalText()
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedMsg := string(rawMsg)
+
 		logger.Info("this is test", "who", "programmer", "err", errMsg)
 
 		b := buf.Bytes()
@@ -198,9 +214,9 @@ func TestLogger_JSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assert.Equal(t, raw["@message"], "this is test")
-		assert.Equal(t, raw["who"], "programmer")
-		assert.Equal(t, raw["err"], errMsg.Error())
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "programmer", raw["who"])
+		assert.Equal(t, expectedMsg, raw["err"])
 	})
 }
 
@@ -215,7 +231,7 @@ func (c *customErrJSON) Error() string {
 
 // json.Marshaler impl.
 func (c customErrJSON) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.Quote(c.Message)), nil
+	return []byte(strconv.Quote(fmt.Sprintf("json-marshaler: %s", c.Message))), nil
 }
 
 type customErrText struct {
@@ -229,7 +245,7 @@ func (c *customErrText) Error() string {
 
 // text.Marshaler impl.
 func (c customErrText) MarshalText() ([]byte, error) {
-	return []byte(c.Message), nil
+	return []byte(fmt.Sprintf("text-marshaler: %s", c.Message)), nil
 }
 
 func BenchmarkLogger(b *testing.B) {
