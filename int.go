@@ -281,7 +281,10 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 				continue
 			}
 			val := args[i+1]
-			if err, ok := args[i+1].(error); ok {
+			// Check if val is of type error. If error type doesn't
+			// implement json.Marshaler or encoding.TextMarshaler
+			// then set val to err.Error() so that it gets marshaled
+			if err, ok := val.(error); ok {
 				switch err.(type) {
 				case json.Marshaler, encoding.TextMarshaler:
 				default:
