@@ -369,6 +369,8 @@ func (z *intLogger) Named(name string) Logger {
 
 	if nz.name != "" {
 		nz.name = nz.name + "." + name
+	} else {
+		nz.name = name
 	}
 
 	return &nz
