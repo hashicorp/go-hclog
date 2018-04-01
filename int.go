@@ -167,7 +167,7 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 
 	z.w.WriteString(msg)
 
-	args = append(z.implied, args...)
+	args = combineArgs(z.implied, args)
 
 	var stacktrace CapturedStacktrace
 
@@ -274,6 +274,8 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 		}
 	}
 
+	args = combineArgs(z.implied, args)
+
 	if args != nil && len(args) > 0 {
 		if len(args)%2 != 0 {
 			cs, ok := args[len(args)-1].(CapturedStacktrace)
@@ -310,6 +312,15 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 	if err != nil {
 		panic(err)
 	}
+}
+
+// combine two sets of arguments into a new slice
+func combineArgs(args1, args2 []interface{}) []interface{} {
+	result := make([]interface{}, 0, len(args1)+len(args2))
+	result = append(result, args1...)
+	result = append(result, args2...)
+
+	return result
 }
 
 // Emit the message and args at DEBUG level
@@ -368,7 +379,7 @@ func (z *intLogger) IsError() bool {
 func (z *intLogger) With(args ...interface{}) Logger {
 	var nz intLogger = *z
 
-	nz.implied = append(nz.implied, args...)
+	nz.implied = combineArgs(z.implied, args)
 
 	return &nz
 }
