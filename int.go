@@ -167,71 +167,15 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 
 	z.w.WriteString(msg)
 
-	args = append(z.implied, args...)
-
-	var stacktrace CapturedStacktrace
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				stacktrace = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
+	if len(z.implied)+len(args) > 0 {
 		z.w.WriteByte(':')
+	}
 
-	FOR:
-		for i := 0; i < len(args); i = i + 2 {
-			var val string
+	stacktrace := z.logArgs(z.implied)
+	dirstack := z.logArgs(args)
 
-			switch st := args[i+1].(type) {
-			case string:
-				val = st
-			case int:
-				val = strconv.FormatInt(int64(st), 10)
-			case int64:
-				val = strconv.FormatInt(int64(st), 10)
-			case int32:
-				val = strconv.FormatInt(int64(st), 10)
-			case int16:
-				val = strconv.FormatInt(int64(st), 10)
-			case int8:
-				val = strconv.FormatInt(int64(st), 10)
-			case uint:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint64:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint32:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint16:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint8:
-				val = strconv.FormatUint(uint64(st), 10)
-			case CapturedStacktrace:
-				stacktrace = st
-				continue FOR
-			case Format:
-				val = fmt.Sprintf(st[0].(string), st[1:]...)
-			default:
-				val = fmt.Sprintf("%v", st)
-			}
-
-			z.w.WriteByte(' ')
-			z.w.WriteString(args[i].(string))
-			z.w.WriteByte('=')
-
-			if strings.ContainsAny(val, " \t\n\r") {
-				z.w.WriteByte('"')
-				z.w.WriteString(val)
-				z.w.WriteByte('"')
-			} else {
-				z.w.WriteString(val)
-			}
-		}
+	if dirstack != "" {
+		stacktrace = dirstack
 	}
 
 	z.w.WriteString("\n")
@@ -239,6 +183,75 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 	if stacktrace != "" {
 		z.w.WriteString(string(stacktrace))
 	}
+}
+
+func (z *intLogger) logArgs(args []interface{}) CapturedStacktrace {
+	var stacktrace CapturedStacktrace
+
+	if len(args) == 0 {
+		return stacktrace
+	}
+
+	if len(args)%2 != 0 {
+		cs, ok := args[len(args)-1].(CapturedStacktrace)
+		if ok {
+			args = args[:len(args)-1]
+			stacktrace = cs
+		} else {
+			args = append(args, "<unknown>")
+		}
+	}
+
+FOR:
+	for i := 0; i < len(args); i = i + 2 {
+		var val string
+
+		switch st := args[i+1].(type) {
+		case string:
+			val = st
+		case int:
+			val = strconv.FormatInt(int64(st), 10)
+		case int64:
+			val = strconv.FormatInt(int64(st), 10)
+		case int32:
+			val = strconv.FormatInt(int64(st), 10)
+		case int16:
+			val = strconv.FormatInt(int64(st), 10)
+		case int8:
+			val = strconv.FormatInt(int64(st), 10)
+		case uint:
+			val = strconv.FormatUint(uint64(st), 10)
+		case uint64:
+			val = strconv.FormatUint(uint64(st), 10)
+		case uint32:
+			val = strconv.FormatUint(uint64(st), 10)
+		case uint16:
+			val = strconv.FormatUint(uint64(st), 10)
+		case uint8:
+			val = strconv.FormatUint(uint64(st), 10)
+		case CapturedStacktrace:
+			stacktrace = st
+			continue FOR
+		case Format:
+			val = fmt.Sprintf(st[0].(string), st[1:]...)
+		default:
+			val = fmt.Sprintf("%v", st)
+		}
+
+		z.w.WriteByte(' ')
+		z.w.WriteString(args[i].(string))
+		z.w.WriteByte('=')
+
+		if strings.ContainsAny(val, " \t\n\r") {
+			z.w.WriteByte('"')
+			z.w.WriteString(val)
+			z.w.WriteByte('"')
+		} else {
+			z.w.WriteString(val)
+		}
+	}
+
+	return stacktrace
 }
 
 // JSON logging function
@@ -276,47 +289,52 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 		}
 	}
 
-	args = append(z.implied, args...)
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				vals["stacktrace"] = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		for i := 0; i < len(args); i = i + 2 {
-			if _, ok := args[i].(string); !ok {
-				// As this is the logging function not much we can do here
-				// without injecting into logs...
-				continue
-			}
-			val := args[i+1]
-			switch sv := val.(type) {
-			case error:
-				// Check if val is of type error. If error type doesn't
-				// implement json.Marshaler or encoding.TextMarshaler
-				// then set val to err.Error() so that it gets marshaled
-				switch sv.(type) {
-				case json.Marshaler, encoding.TextMarshaler:
-				default:
-					val = sv.Error()
-				}
-			case Format:
-				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
-			}
-
-			vals[args[i].(string)] = val
-		}
-	}
+	z.logJsonArgs(vals, z.implied)
+	z.logJsonArgs(vals, args)
 
 	err := json.NewEncoder(z.w).Encode(vals)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (z *intLogger) logJsonArgs(vals map[string]interface{}, args []interface{}) {
+	if len(args) == 0 {
+		return
+	}
+
+	if len(args)%2 != 0 {
+		cs, ok := args[len(args)-1].(CapturedStacktrace)
+		if ok {
+			args = args[:len(args)-1]
+			vals["stacktrace"] = cs
+		} else {
+			args = append(args, "<unknown>")
+		}
+	}
+
+	for i := 0; i < len(args); i = i + 2 {
+		if _, ok := args[i].(string); !ok {
+			// As this is the logging function not much we can do here
+			// without injecting into logs...
+			continue
+		}
+		val := args[i+1]
+		switch sv := val.(type) {
+		case error:
+			// Check if val is of type error. If error type doesn't
+			// implement json.Marshaler or encoding.TextMarshaler
+			// then set val to err.Error() so that it gets marshaled
+			switch sv.(type) {
+			case json.Marshaler, encoding.TextMarshaler:
+			default:
+				val = sv.Error()
+			}
+		case Format:
+			val = fmt.Sprintf(sv[0].(string), sv[1:]...)
+		}
+
+		vals[args[i].(string)] = val
 	}
 }
 
