@@ -211,6 +211,26 @@ func TestLogger(t *testing.T) {
 		dataIdx = strings.IndexByte(output, ' ')
 		assert.Equal(t, "[INFO ] with_test: derived_test: a=1 b=2 c=3 cat=30\n", output[dataIdx+1:])
 	})
+
+	t.Run("supports Printf style expansions when requested", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		str := buf.String()
+
+		dataIdx := strings.IndexByte(str, ' ')
+
+		// ts := str[:dataIdx]
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO ] test: this is test: production=\"12 beans/day\"\n", rest)
+	})
 }
 
 func TestLogger_JSON(t *testing.T) {
@@ -284,6 +304,7 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "programmer", raw["who"])
 		assert.Equal(t, errMsg.Error(), raw["err"])
 	})
+
 	t.Run("json formatting custom error type json marshaler", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -316,6 +337,7 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "programmer", raw["who"])
 		assert.Equal(t, expectedMsg, raw["err"])
 	})
+
 	t.Run("json formatting custom error type text marshaler", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -344,6 +366,28 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, "programmer", raw["who"])
 		assert.Equal(t, expectedMsg, raw["err"])
+	})
+
+	t.Run("supports Printf style expansions when requested", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "12 beans/day", raw["production"])
 	})
 }
 
