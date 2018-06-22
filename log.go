@@ -149,6 +149,9 @@ type LoggerOptions struct {
 	// Control if the output should be in JSON.
 	JSONFormat bool
 
+	// Control if the JSONFormat should output lists instead of overriding previous values
+	JSONList bool
+
 	// Include file and line information in each log line
 	IncludeLocation bool
 

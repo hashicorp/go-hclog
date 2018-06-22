@@ -48,6 +48,7 @@ func New(opts *LoggerOptions) Logger {
 	ret := &intLogger{
 		m:          mtx,
 		json:       opts.JSONFormat,
+		jsonList:   opts.JSONList,
 		caller:     opts.IncludeLocation,
 		name:       opts.Name,
 		timeFormat: TimeFormat,
@@ -64,6 +65,7 @@ func New(opts *LoggerOptions) Logger {
 // by this package.
 type intLogger struct {
 	json       bool
+	jsonList   bool
 	caller     bool
 	name       string
 	timeFormat string
@@ -248,6 +250,26 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
 	}
 
+	var setVal func(key, val interface{})
+
+	if z.jsonList {
+		setVal = func(keyI, val interface{}) {
+			key := keyI.(string)
+			prev, ok := vals[key]
+			var valList []interface{}
+			if ok {
+				valList = prev.([]interface{})
+			} else {
+				valList = []interface{}{}
+			}
+			vals[key] = append(valList, val)
+		}
+	} else {
+		setVal = func(key, val interface{}) {
+			vals[key.(string)] = val
+		}
+	}
+
 	var levelStr string
 	switch level {
 	case Error:
@@ -283,7 +305,7 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 			cs, ok := args[len(args)-1].(CapturedStacktrace)
 			if ok {
 				args = args[:len(args)-1]
-				vals["stacktrace"] = cs
+				setVal("stacktrace", cs)
 			} else {
 				args = append(args, "<unknown>")
 			}
@@ -310,7 +332,7 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
 			}
 
-			vals[args[i].(string)] = val
+			setVal(args[i], val)
 		}
 	}
 

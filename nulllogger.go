@@ -1,8 +1,8 @@
 package hclog
 
 import (
-	"log"
 	"io/ioutil"
+	"log"
 )
 
 // NewNullLogger instantiates a Logger for which all calls
