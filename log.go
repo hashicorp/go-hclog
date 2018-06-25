@@ -152,6 +152,9 @@ type LoggerOptions struct {
 	// Control if the JSONFormat should output lists instead of overriding previous values
 	JSONList bool
 
+	// Control if the JSONFormat should promote single values to lists instead of overriding previous values
+	JSONListPromote bool
+
 	// Include file and line information in each log line
 	IncludeLocation bool
 

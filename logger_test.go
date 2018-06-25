@@ -279,6 +279,29 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, []interface{}{"testing is fun"}, raw["why"])
 	})
 
+	t.Run("json list promoting", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := New(&LoggerOptions{
+			Name:            "test",
+			Output:          &buf,
+			JSONFormat:      true,
+			JSONListPromote: true,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "testing is fun", "who", "user")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, []interface{}{"programmer", "user"}, raw["who"])
+		assert.Equal(t, "testing is fun", raw["why"])
+	})
+
 	t.Run("json formatting with", func(t *testing.T) {
 		var buf bytes.Buffer
 		logger := New(&LoggerOptions{

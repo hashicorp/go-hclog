@@ -46,14 +46,15 @@ func New(opts *LoggerOptions) Logger {
 	}
 
 	ret := &intLogger{
-		m:          mtx,
-		json:       opts.JSONFormat,
-		jsonList:   opts.JSONList,
-		caller:     opts.IncludeLocation,
-		name:       opts.Name,
-		timeFormat: TimeFormat,
-		w:          bufio.NewWriter(output),
-		level:      level,
+		m:               mtx,
+		json:            opts.JSONFormat,
+		jsonList:        opts.JSONList,
+		jsonListPromote: opts.JSONListPromote,
+		caller:          opts.IncludeLocation,
+		name:            opts.Name,
+		timeFormat:      TimeFormat,
+		w:               bufio.NewWriter(output),
+		level:           level,
 	}
 	if opts.TimeFormat != "" {
 		ret.timeFormat = opts.TimeFormat
@@ -64,11 +65,12 @@ func New(opts *LoggerOptions) Logger {
 // The internal logger implementation. Internal in that it is defined entirely
 // by this package.
 type intLogger struct {
-	json       bool
-	jsonList   bool
-	caller     bool
-	name       string
-	timeFormat string
+	json            bool
+	jsonList        bool
+	jsonListPromote bool
+	caller          bool
+	name            string
+	timeFormat      string
 
 	// this is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
@@ -261,6 +263,21 @@ func (z *intLogger) logJson(t time.Time, level Level, msg string, args ...interf
 				valList = prev.([]interface{})
 			} else {
 				valList = []interface{}{}
+			}
+			vals[key] = append(valList, val)
+		}
+	} else if z.jsonListPromote {
+		setVal = func(keyI, val interface{}) {
+			key := keyI.(string)
+			prev, ok := vals[key]
+			if !ok {
+				vals[key] = val
+				return
+			}
+			var valList []interface{}
+			valList, ok = prev.([]interface{})
+			if !ok {
+				valList = []interface{}{prev}
 			}
 			vals[key] = append(valList, val)
 		}
