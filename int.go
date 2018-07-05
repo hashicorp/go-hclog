@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -374,11 +375,39 @@ func (z *intLogger) IsError() bool {
 // the given key/value pairs. This is used to create a context specific
 // Logger.
 func (z *intLogger) With(args ...interface{}) Logger {
+	if len(args)%2 != 0 {
+		panic("With() call requires paired arguments")
+	}
+
 	var nz intLogger = *z
 
+	result := make(map[string]interface{}, len(z.implied)+len(args))
+	keys := make([]string, 0, len(z.implied)+len(args))
+
+	// Read existing args, store map and key for consistent sorting
+	for i := 0; i < len(z.implied); i += 2 {
+		key := z.implied[i].(string)
+		keys = append(keys, key)
+		result[key] = z.implied[i+1]
+	}
+	// Read new args, store map and key for consistent sorting
+	for i := 0; i < len(args); i += 2 {
+		key := args[i].(string)
+		_, exists := result[key]
+		if !exists {
+			keys = append(keys, key)
+		}
+		result[key] = args[i+1]
+	}
+
+	// Sort keys to be consistent
+	sort.Strings(keys)
+
 	nz.implied = make([]interface{}, 0, len(z.implied)+len(args))
-	nz.implied = append(nz.implied, z.implied...)
-	nz.implied = append(nz.implied, args...)
+	for _, k := range keys {
+		nz.implied = append(nz.implied, k)
+		nz.implied = append(nz.implied, result[k])
+	}
 
 	return &nz
 }
