@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -52,11 +53,12 @@ func New(opts *LoggerOptions) Logger {
 		name:       opts.Name,
 		timeFormat: TimeFormat,
 		w:          bufio.NewWriter(output),
-		level:      level,
+		level:      new(int32),
 	}
 	if opts.TimeFormat != "" {
 		ret.timeFormat = opts.TimeFormat
 	}
+	atomic.StoreInt32(ret.level, int32(level))
 	return ret
 }
 
@@ -72,7 +74,7 @@ type intLogger struct {
 	// those derived loggers share the bufio.Writer as well.
 	m     *sync.Mutex
 	w     *bufio.Writer
-	level Level
+	level *int32
 
 	implied []interface{}
 }
@@ -87,7 +89,7 @@ const TimeFormat = "2006-01-02T15:04:05.000Z0700"
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (z *intLogger) Log(level Level, msg string, args ...interface{}) {
-	if level < z.level {
+	if level < Level(atomic.LoadInt32(z.level)) {
 		return
 	}
 
@@ -347,27 +349,27 @@ func (z *intLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (z *intLogger) IsTrace() bool {
-	return z.level == Trace
+	return Level(atomic.LoadInt32(z.level)) == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (z *intLogger) IsDebug() bool {
-	return z.level <= Debug
+	return Level(atomic.LoadInt32(z.level)) <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (z *intLogger) IsInfo() bool {
-	return z.level <= Info
+	return Level(atomic.LoadInt32(z.level)) <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (z *intLogger) IsWarn() bool {
-	return z.level <= Warn
+	return Level(atomic.LoadInt32(z.level)) <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (z *intLogger) IsError() bool {
-	return z.level <= Error
+	return Level(atomic.LoadInt32(z.level)) <= Error
 }
 
 // Return a sub-Logger for which every emitted log message will contain
@@ -406,6 +408,12 @@ func (z *intLogger) ResetNamed(name string) Logger {
 	nz.name = name
 
 	return &nz
+}
+
+// Update the logging level on-the-fly. This will affect all subloggers as
+// well.
+func (z *intLogger) SetLevel(level Level) {
+	atomic.StoreInt32(z.level, int32(level))
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This

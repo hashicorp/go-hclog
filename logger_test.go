@@ -212,6 +212,52 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO ] with_test: derived_test: a=1 b=2 c=3 cat=30\n", output[dataIdx+1:])
 	})
 
+	t.Run("use with and log and change levels", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		rootLogger := New(&LoggerOptions{
+			Name:   "with_test",
+			Output: &buf,
+			Level:  Warn,
+		})
+
+		// Build the root logger in two steps, which triggers a slice capacity increase
+		// and is part of the test for inadvertant slice aliasing.
+		rootLogger = rootLogger.With("a", 1, "b", 2)
+		rootLogger = rootLogger.With("c", 3)
+
+		// Derive another logger which should be completely independent of rootLogger
+		derived := rootLogger.With("cat", 30)
+
+		rootLogger.Info("root_test", "bird", 10)
+		output := buf.String()
+		if output != "" {
+			t.Fatalf("unexpected output: %s", output)
+		}
+
+		buf.Reset()
+
+		derived.Info("derived_test")
+		output = buf.String()
+		if output != "" {
+			t.Fatalf("unexpected output: %s", output)
+		}
+
+		derived.SetLevel(Info)
+
+		rootLogger.Info("root_test", "bird", 10)
+		output = buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		assert.Equal(t, "[INFO ] with_test: root_test: a=1 b=2 c=3 bird=10\n", output[dataIdx+1:])
+
+		buf.Reset()
+
+		derived.Info("derived_test")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		assert.Equal(t, "[INFO ] with_test: derived_test: a=1 b=2 c=3 cat=30\n", output[dataIdx+1:])
+	})
+
 	t.Run("supports Printf style expansions when requested", func(t *testing.T) {
 		var buf bytes.Buffer
 
