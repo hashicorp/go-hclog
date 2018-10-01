@@ -148,7 +148,7 @@ func (z *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 	if ok {
 		z.w.WriteString(s)
 	} else {
-		z.w.WriteString("[UNKN ]")
+		z.w.WriteString("[?????]")
 	}
 
 	if z.caller {
