@@ -12,6 +12,7 @@ import (
 	"go/importer"
 	"go/token"
 	"go/types"
+	"strings"
 )
 
 // stdImporter is the importer we use to import packages.
@@ -42,7 +43,18 @@ func isNamedType(t types.Type, path, name string) bool {
 		return false
 	}
 	obj := n.Obj()
-	return obj.Name() == name && obj.Pkg() != nil && obj.Pkg().Path() == path
+	return obj.Name() == name && isPackage(obj.Pkg(), path)
+}
+
+// isPackage reports whether pkg has path as the canonical path,
+// taking into account vendoring effects
+func isPackage(pkg *types.Package, path string) bool {
+	if pkg == nil {
+		return false
+	}
+
+	return pkg.Path() == path ||
+		strings.HasSuffix(pkg.Path(), "/vendor/"+path)
 }
 
 // importType returns the type denoted by the qualified identifier
