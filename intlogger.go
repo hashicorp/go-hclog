@@ -47,7 +47,8 @@ type intLogger struct {
 	// This is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
 	mutex  *sync.Mutex
-	writer *bufio.Writer
+	stderr *bufio.Writer
+	stdout *bufio.Writer
 	level  *int32
 
 	implied []interface{}
@@ -59,9 +60,11 @@ func New(opts *LoggerOptions) Logger {
 		opts = &LoggerOptions{}
 	}
 
-	output := opts.Output
-	if output == nil {
-		output = os.Stderr
+	var stderr io.Writer = os.Stderr
+	var stdout io.Writer = os.Stdout
+	if _, ok := opts.Output.(*defaultOutput); !ok && opts.Output != nil {
+		stderr = opts.Output
+		stdout = opts.Output
 	}
 
 	level := opts.Level
@@ -80,7 +83,8 @@ func New(opts *LoggerOptions) Logger {
 		name:       opts.Name,
 		timeFormat: TimeFormat,
 		mutex:      mutex,
-		writer:     bufio.NewWriter(output),
+		stderr:     bufio.NewWriter(stderr),
+		stdout:     bufio.NewWriter(stdout),
 		level:      new(int32),
 	}
 
@@ -91,6 +95,16 @@ func New(opts *LoggerOptions) Logger {
 	atomic.StoreInt32(l.level, int32(level))
 
 	return l
+}
+
+// writer returns a writer for a specific log level.
+func (l *intLogger) writer(level Level) *bufio.Writer {
+	switch level {
+	case Error:
+		return l.stderr
+	default:
+		return l.stdout
+	}
 }
 
 // Log a message and a set of key/value pairs if the given level is at
@@ -111,7 +125,7 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 		l.log(t, level, msg, args...)
 	}
 
-	l.writer.Flush()
+	l.writer(level).Flush()
 }
 
 // Cleanup a path by returning the last 2 segments of the path only.
@@ -145,34 +159,37 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-	l.writer.WriteString(t.Format(l.timeFormat))
-	l.writer.WriteByte(' ')
+	// Get the writer based on the log level.
+	writer := l.writer(level)
+
+	writer.WriteString(t.Format(l.timeFormat))
+	writer.WriteByte(' ')
 
 	s, ok := _levelToBracket[level]
 	if ok {
-		l.writer.WriteString(s)
+		writer.WriteString(s)
 	} else {
-		l.writer.WriteString("[?????]")
+		writer.WriteString("[?????]")
 	}
 
 	if l.caller {
 		if _, file, line, ok := runtime.Caller(3); ok {
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(trimCallerPath(file))
-			l.writer.WriteByte(':')
-			l.writer.WriteString(strconv.Itoa(line))
-			l.writer.WriteByte(':')
+			writer.WriteByte(' ')
+			writer.WriteString(trimCallerPath(file))
+			writer.WriteByte(':')
+			writer.WriteString(strconv.Itoa(line))
+			writer.WriteByte(':')
 		}
 	}
 
-	l.writer.WriteByte(' ')
+	writer.WriteByte(' ')
 
 	if l.name != "" {
-		l.writer.WriteString(l.name)
-		l.writer.WriteString(": ")
+		writer.WriteString(l.name)
+		writer.WriteString(": ")
 	}
 
-	l.writer.WriteString(msg)
+	writer.WriteString(msg)
 
 	args = append(l.implied, args...)
 
@@ -189,7 +206,7 @@ func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 			}
 		}
 
-		l.writer.WriteByte(':')
+		writer.WriteByte(':')
 
 	FOR:
 		for i := 0; i < len(args); i = i + 2 {
@@ -236,24 +253,24 @@ func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 				}
 			}
 
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(args[i].(string))
-			l.writer.WriteByte('=')
+			writer.WriteByte(' ')
+			writer.WriteString(args[i].(string))
+			writer.WriteByte('=')
 
 			if !raw && strings.ContainsAny(val, " \t\n\r") {
-				l.writer.WriteByte('"')
-				l.writer.WriteString(val)
-				l.writer.WriteByte('"')
+				writer.WriteByte('"')
+				writer.WriteString(val)
+				writer.WriteByte('"')
 			} else {
-				l.writer.WriteString(val)
+				writer.WriteString(val)
 			}
 		}
 	}
 
-	l.writer.WriteString("\n")
+	writer.WriteString("\n")
 
 	if stacktrace != "" {
-		l.writer.WriteString(string(stacktrace))
+		writer.WriteString(string(stacktrace))
 	}
 }
 
@@ -369,7 +386,7 @@ func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interf
 		}
 	}
 
-	err := json.NewEncoder(l.writer).Encode(vals)
+	err := json.NewEncoder(l.writer(level)).Encode(vals)
 	if err != nil {
 		panic(err)
 	}

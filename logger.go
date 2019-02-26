@@ -10,11 +10,17 @@ import (
 
 var (
 	//DefaultOutput is used as the default log output.
-	DefaultOutput = os.Stderr
+	DefaultOutput io.Writer = &defaultOutput{}
 
 	// DefaultLevel is used as the default log level.
 	DefaultLevel = Info
 )
+
+type defaultOutput struct{}
+
+func (o *defaultOutput) Write(p []byte) (int, error) {
+	return os.Stderr.Write(p)
+}
 
 // Level represents a log level.
 type Level int32
