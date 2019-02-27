@@ -1,14 +1,12 @@
 package hclog
 
 import (
-	"bufio"
 	"bytes"
 	"encoding"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -47,7 +45,7 @@ type intLogger struct {
 	// This is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
 	mutex  *sync.Mutex
-	writer *bufio.Writer
+	writer *writer
 	level  *int32
 
 	implied []interface{}
@@ -61,7 +59,7 @@ func New(opts *LoggerOptions) Logger {
 
 	output := opts.Output
 	if output == nil {
-		output = os.Stderr
+		output = DefaultOutput
 	}
 
 	level := opts.Level
@@ -80,7 +78,7 @@ func New(opts *LoggerOptions) Logger {
 		name:       opts.Name,
 		timeFormat: TimeFormat,
 		mutex:      mutex,
-		writer:     bufio.NewWriter(output),
+		writer:     newWriter(output),
 		level:      new(int32),
 	}
 
@@ -111,7 +109,7 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 		l.log(t, level, msg, args...)
 	}
 
-	l.writer.Flush()
+	l.writer.Flush(level)
 }
 
 // Cleanup a path by returning the last 2 segments of the path only.
