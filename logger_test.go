@@ -343,7 +343,7 @@ func TestLogger_leveledWriter(t *testing.T) {
 
 		logger := New(&LoggerOptions{
 			Name:   "test",
-			Output: NewLevelWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
+			Output: NewLeveledWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
 		})
 
 		logger.Error("this is an error", "who", "programmer", "why", "testing")
@@ -361,7 +361,7 @@ func TestLogger_leveledWriter(t *testing.T) {
 
 		logger := New(&LoggerOptions{
 			Name:   "test",
-			Output: NewLevelWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
+			Output: NewLeveledWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
 		})
 
 		logger.Info("this is test", "who", "programmer", "why", "testing")
@@ -379,7 +379,7 @@ func TestLogger_leveledWriter(t *testing.T) {
 
 		logger := New(&LoggerOptions{
 			Name:   "test",
-			Output: NewLevelWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
+			Output: NewLeveledWriter(&stdout, map[Level]io.Writer{Error: &stderr}),
 		})
 
 		logger.Info("this is test", "who", "programmer", "why", "testing")
