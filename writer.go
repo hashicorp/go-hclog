@@ -48,11 +48,11 @@ type LeveledWriter struct {
 	overrides map[Level]io.Writer
 }
 
-// NewLevelWriter returns an initialized LeveledWriter.
+// NewLeveledWriter returns an initialized LeveledWriter.
 //
 // standard will be used as the default writer for all log levels,
 // except for log levels that are defined in the overrides map.
-func NewLevelWriter(standard io.Writer, overrides map[Level]io.Writer) *LeveledWriter {
+func NewLeveledWriter(standard io.Writer, overrides map[Level]io.Writer) *LeveledWriter {
 	return &LeveledWriter{
 		standard:  standard,
 		overrides: overrides,
