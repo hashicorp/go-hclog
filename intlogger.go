@@ -519,5 +519,9 @@ func (l *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 }
 
 func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
-	return &stdlogAdapter{l, opts.InferLevels}
+	return &stdlogAdapter{
+		log:         l,
+		inferLevels: opts.InferLevels,
+		forceLevel:  opts.ForceLevel,
+	}
 }
