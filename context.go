@@ -19,10 +19,15 @@ func WithContext(ctx context.Context, logger Logger, args ...interface{}) contex
 	return context.WithValue(ctx, contextKey, logger)
 }
 
-// FromContext returns a logger from the context. This will return nil
-// if there is no logger in the context.
+// FromContext returns a logger from the context. This will return L()
+// (the default logger) if no logger is found in the context. Therefore,
+// this will never return a nil value.
 func FromContext(ctx context.Context) Logger {
 	logger, _ := ctx.Value(contextKey).(Logger)
+	if logger == nil {
+		return L()
+	}
+
 	return logger
 }
 

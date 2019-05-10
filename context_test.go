@@ -14,6 +14,10 @@ func TestContext_simpleLogger(t *testing.T) {
 	require.Equal(t, l, FromContext(ctx))
 }
 
+func TestContext_empty(t *testing.T) {
+	require.Equal(t, L(), FromContext(context.Background()))
+}
+
 func TestContext_fields(t *testing.T) {
 	var buf bytes.Buffer
 	l := New(&LoggerOptions{
