@@ -50,6 +50,7 @@ type intLogger struct {
 	mutex  *sync.Mutex
 	writer *writer
 	level  *int32
+	color  bool
 
 	implied []interface{}
 }
@@ -83,6 +84,7 @@ func New(opts *LoggerOptions) Logger {
 		mutex:      mutex,
 		writer:     newWriter(output),
 		level:      new(int32),
+		color:      opts.Color,
 	}
 
 	if opts.TimeFormat != "" {
@@ -146,6 +148,15 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
+
+	// Check to see if the logger is colored.
+	if l.color && !l.json {
+		colorCode := colorFromLevel(level)
+		// Write the color bytes
+		colorIndicator := fmt.Sprintf("\033[%dm", colorCode)
+		l.writer.WriteString(colorIndicator)
+	}
+
 	l.writer.WriteString(t.Format(l.timeFormat))
 	l.writer.WriteByte(' ')
 
@@ -250,12 +261,35 @@ func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 			}
 		}
 	}
+	if l.color && !l.json {
+		// Write the clear byte at the end.
+		defer l.writer.WriteString("\033[0m")
+	}
 
 	l.writer.WriteString("\n")
 
 	if stacktrace != "" {
 		l.writer.WriteString(string(stacktrace))
 	}
+}
+
+func colorFromLevel(level Level) int {
+	var color = 30
+	switch level {
+	case Error:
+		color = 31
+	case Warn:
+		color = 33
+	case Info:
+		color = 34
+	case Debug:
+		color = 32
+	case Trace:
+		color = 97
+	default:
+		color = 97
+	}
+	return color
 }
 
 func (l *intLogger) renderSlice(v reflect.Value) string {

@@ -173,4 +173,7 @@ type LoggerOptions struct {
 
 	// The time format to use instead of the default
 	TimeFormat string
+
+	// Color will color logging output; cannot be used with JSONFormat.
+	Color bool
 }
