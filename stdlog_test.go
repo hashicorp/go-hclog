@@ -109,6 +109,20 @@ func TestStdlogAdapter_ForceLevel(t *testing.T) {
 			write:      "this is a test",
 			expect:     "[INFO]  test: this is a test\n",
 		},
+		{
+			name:        "infer debug",
+			forceLevel:  NoLevel,
+			inferLevels: true,
+			write:       "[DEBUG] debug info",
+			expect:      "[DEBUG] test: debug info\n",
+		},
+		{
+			name:        "info is used if not forced and cannot infer",
+			forceLevel:  NoLevel,
+			inferLevels: false,
+			write:       "some message",
+			expect:      "[INFO]  test: some message\n",
+		},
 	}
 
 	for _, c := range cases {
