@@ -36,6 +36,7 @@ var (
 
 // Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}
+var _ MultiSinkLogger = &intLogger{}
 
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
@@ -50,6 +51,8 @@ type intLogger struct {
 	mutex  *sync.Mutex
 	writer *writer
 	level  *int32
+
+	sinks map[Logger]struct{}
 
 	implied []interface{}
 }
@@ -83,6 +86,7 @@ func New(opts *LoggerOptions) Logger {
 		mutex:      mutex,
 		writer:     newWriter(output),
 		level:      new(int32),
+		sinks:      make(map[Logger]struct{}),
 	}
 
 	if opts.TimeFormat != "" {
@@ -94,17 +98,56 @@ func New(opts *LoggerOptions) Logger {
 	return l
 }
 
+func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
+	return New(opts).(MultiSinkLogger)
+}
+
+func (l *intLogger) RegisterSink(opts *LoggerOptions) (Logger, error) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	nl := New(opts)
+
+	if _, ok := l.sinks[nl]; ok {
+		return nil, fmt.Errorf("handler already registered")
+	}
+
+	l.sinks[nl] = struct{}{}
+	return nl, nil
+}
+
+func (l *intLogger) DeregisterSink(logger Logger) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	delete(l.sinks, logger)
+}
+
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
-	if level < Level(atomic.LoadInt32(l.level)) {
-		return
-	}
-
 	t := time.Now()
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+
+	for lh := range l.sinks {
+		l := lh.(*intLogger)
+		if level < Level(atomic.LoadInt32(l.level)) {
+			continue
+		}
+
+		if l.json {
+			l.logJSON(t, level, msg, args...)
+		} else {
+			l.log(t, level, msg, args...)
+		}
+
+		l.writer.Flush(level)
+	}
+
+	if level < Level(atomic.LoadInt32(l.level)) {
+		return
+	}
 
 	if l.json {
 		l.logJSON(t, level, msg, args...)

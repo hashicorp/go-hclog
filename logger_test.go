@@ -337,6 +337,61 @@ func TestLogger(t *testing.T) {
 	})
 }
 
+func TestLogger_MultiSink(t *testing.T) {
+	t.Run("writes lower level logs for a leveled handler", func(t *testing.T) {
+		var bufLogger bytes.Buffer
+		var bufHandler bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  LevelFromString("ERROR"),
+			Output: &bufLogger,
+		})
+
+		logger.RegisterSink(&LoggerOptions{
+			Level:  LevelFromString("DEBUG"),
+			Output: &bufHandler,
+		})
+
+		logger.Debug("this is a test")
+
+		logStr := bufLogger.String()
+		handlerStr := bufHandler.String()
+		dataIdx := strings.IndexByte(handlerStr, ' ')
+		rest := handlerStr[dataIdx+1:]
+
+		assert.Equal(t, "", logStr)
+		assert.Equal(t, "[DEBUG] this is a test\n", rest)
+	})
+
+	t.Run("Deregister removes a sink ", func(t *testing.T) {
+		var bufLogger bytes.Buffer
+		var bufHandler bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  LevelFromString("DEBUG"),
+			Output: &bufLogger,
+		})
+
+		sink, _ := logger.RegisterSink(&LoggerOptions{
+			Output: &bufHandler,
+		})
+
+		logger.DeregisterSink(sink)
+
+		logger.Debug("this is a test")
+
+		parentStr := bufLogger.String()
+		sinkStr := bufHandler.String()
+		pdataIdx := strings.IndexByte(parentStr, ' ')
+		sdataIdx := strings.IndexByte(sinkStr, ' ')
+		srest := sinkStr[sdataIdx+1:]
+		prest := parentStr[pdataIdx+1:]
+
+		assert.Equal(t, "[DEBUG] this is a test\n", prest)
+		assert.Equal(t, "", srest)
+	})
+}
+
 func TestLogger_leveledWriter(t *testing.T) {
 	t.Run("writes errors to stderr", func(t *testing.T) {
 		var stderr bytes.Buffer
