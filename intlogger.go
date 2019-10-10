@@ -122,24 +122,32 @@ func (l *intLogger) DeregisterSink(logger Logger) {
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
+	if level < Level(atomic.LoadInt32(l.level)) && len(l.sinks) == 0 {
+		return
+	}
+
 	t := time.Now()
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	for lh := range l.sinks {
-		l := lh.(*intLogger)
-		if level < Level(atomic.LoadInt32(l.level)) {
+		lh, ok := lh.(*intLogger)
+		if !ok {
 			continue
 		}
 
-		if l.json {
-			l.logJSON(t, level, msg, args...)
-		} else {
-			l.log(t, level, msg, args...)
+		if level < Level(atomic.LoadInt32(lh.level)) {
+			continue
 		}
 
-		l.writer.Flush(level)
+		if lh.json {
+			lh.logJSON(t, level, msg, args...)
+		} else {
+			lh.log(t, level, msg, args...)
+		}
+
+		lh.writer.Flush(level)
 	}
 
 	if level < Level(atomic.LoadInt32(l.level)) {
