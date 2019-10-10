@@ -143,7 +143,7 @@ type Logger interface {
 type MultiSinkLogger interface {
 	Logger
 
-	RegisterSink(opts *LoggerOptions) (Logger, error)
+	RegisterSink(logger Logger)
 	DeregisterSink(logger Logger)
 }
 

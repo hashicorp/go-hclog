@@ -102,18 +102,15 @@ func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
 	return New(opts).(MultiSinkLogger)
 }
 
-func (l *intLogger) RegisterSink(opts *LoggerOptions) (Logger, error) {
+func (l *intLogger) RegisterSink(logger Logger) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	nl := New(opts)
-
-	if _, ok := l.sinks[nl]; ok {
-		return nil, fmt.Errorf("handler already registered")
+	if _, ok := l.sinks[logger]; ok {
+		return
 	}
 
-	l.sinks[nl] = struct{}{}
-	return nl, nil
+	l.sinks[logger] = struct{}{}
 }
 
 func (l *intLogger) DeregisterSink(logger Logger) {

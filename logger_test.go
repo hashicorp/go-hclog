@@ -340,22 +340,22 @@ func TestLogger(t *testing.T) {
 func TestLogger_MultiSink(t *testing.T) {
 	t.Run("writes lower level logs for a leveled handler", func(t *testing.T) {
 		var bufLogger bytes.Buffer
-		var bufHandler bytes.Buffer
+		var bufSink bytes.Buffer
 
 		logger := NewMultiSink(&LoggerOptions{
 			Level:  LevelFromString("ERROR"),
 			Output: &bufLogger,
 		})
 
-		logger.RegisterSink(&LoggerOptions{
+		logger.RegisterSink(New(&LoggerOptions{
 			Level:  LevelFromString("DEBUG"),
-			Output: &bufHandler,
-		})
+			Output: &bufSink,
+		}))
 
 		logger.Debug("this is a test")
 
 		logStr := bufLogger.String()
-		handlerStr := bufHandler.String()
+		handlerStr := bufSink.String()
 		dataIdx := strings.IndexByte(handlerStr, ' ')
 		rest := handlerStr[dataIdx+1:]
 
@@ -365,23 +365,22 @@ func TestLogger_MultiSink(t *testing.T) {
 
 	t.Run("Deregister removes a sink ", func(t *testing.T) {
 		var bufLogger bytes.Buffer
-		var bufHandler bytes.Buffer
+		var bufSink bytes.Buffer
 
 		logger := NewMultiSink(&LoggerOptions{
 			Level:  LevelFromString("DEBUG"),
 			Output: &bufLogger,
 		})
 
-		sink, _ := logger.RegisterSink(&LoggerOptions{
-			Output: &bufHandler,
-		})
+		sink := New(&LoggerOptions{Output: &bufSink})
+		logger.RegisterSink(sink)
 
 		logger.DeregisterSink(sink)
 
 		logger.Debug("this is a test")
 
 		parentStr := bufLogger.String()
-		sinkStr := bufHandler.String()
+		sinkStr := bufSink.String()
 		pdataIdx := strings.IndexByte(parentStr, ' ')
 		sdataIdx := strings.IndexByte(sinkStr, ' ')
 		srest := sinkStr[sdataIdx+1:]
@@ -389,6 +388,24 @@ func TestLogger_MultiSink(t *testing.T) {
 
 		assert.Equal(t, "[DEBUG] this is a test\n", prest)
 		assert.Equal(t, "", srest)
+	})
+
+	t.Run("Registering an already registered sink noops", func(t *testing.T) {
+		var bufLogger bytes.Buffer
+		var bufSink bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  LevelFromString("ERROR"),
+			Output: &bufLogger,
+		})
+
+		sink := New(&LoggerOptions{Output: &bufSink})
+
+		logger.RegisterSink(sink)
+		logger.RegisterSink(sink)
+
+		assert.Equal(t, len(logger.(*intLogger).sinks), 1)
+
 	})
 }
 
