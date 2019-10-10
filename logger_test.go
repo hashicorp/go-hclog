@@ -338,7 +338,7 @@ func TestLogger(t *testing.T) {
 }
 
 func TestLogger_MultiSink(t *testing.T) {
-	t.Run("writes lower level logs for a leveled handler", func(t *testing.T) {
+	t.Run("writes lower level logs to sink", func(t *testing.T) {
 		var bufLogger bytes.Buffer
 		var bufSink bytes.Buffer
 
@@ -355,12 +355,38 @@ func TestLogger_MultiSink(t *testing.T) {
 		logger.Debug("this is a test")
 
 		logStr := bufLogger.String()
-		handlerStr := bufSink.String()
-		dataIdx := strings.IndexByte(handlerStr, ' ')
-		rest := handlerStr[dataIdx+1:]
+		sinkStr := bufSink.String()
+		dataIdx := strings.IndexByte(sinkStr, ' ')
+		rest := sinkStr[dataIdx+1:]
 
 		assert.Equal(t, "", logStr)
 		assert.Equal(t, "[DEBUG] this is a test\n", rest)
+	})
+
+	t.Run("sink includes the name of the calling log", func(t *testing.T) {
+		var bufLogger bytes.Buffer
+		var bufSink bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Name:   "http",
+			Output: &bufLogger,
+		})
+
+		logger.RegisterSink(New(&LoggerOptions{
+			Output: &bufSink,
+		}))
+
+		logger.Info("this is a test")
+
+		logStr := bufLogger.String()
+		sinkStr := bufSink.String()
+		ldataIdx := strings.IndexByte(logStr, ' ')
+		sdataIdx := strings.IndexByte(sinkStr, ' ')
+		lrest := logStr[ldataIdx+1:]
+		srest := sinkStr[sdataIdx+1:]
+
+		assert.Equal(t, "[INFO]  http: this is a test\n", lrest)
+		assert.Equal(t, "[INFO]  http: this is a test\n", srest)
 	})
 
 	t.Run("Deregister removes a sink ", func(t *testing.T) {

@@ -141,6 +141,9 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 			continue
 		}
 
+		// Set the sink name to the name of the calling log
+		lh.name = l.name
+
 		if lh.json {
 			lh.logJSON(t, level, msg, args...)
 		} else {
