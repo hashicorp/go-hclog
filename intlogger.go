@@ -50,7 +50,9 @@ type intLogger struct {
 	// those derived loggers share the bufio.Writer as well.
 	mutex  *sync.Mutex
 	writer *writer
-	level  *int32
+
+	// high 16 bits are len(sinks); low 8 bits are the level
+	level *uint32
 
 	sinks map[Logger]struct{}
 
@@ -85,7 +87,7 @@ func New(opts *LoggerOptions) Logger {
 		timeFormat: TimeFormat,
 		mutex:      mutex,
 		writer:     newWriter(output),
-		level:      new(int32),
+		level:      new(uint32),
 		sinks:      make(map[Logger]struct{}),
 	}
 
@@ -93,7 +95,7 @@ func New(opts *LoggerOptions) Logger {
 		l.timeFormat = opts.TimeFormat
 	}
 
-	atomic.StoreInt32(l.level, int32(level))
+	atomic.StoreUint32(l.level, uint32(level))
 
 	return l
 }
@@ -111,18 +113,48 @@ func (l *intLogger) RegisterSink(logger Logger) {
 	}
 
 	l.sinks[logger] = struct{}{}
+
+	// Shift len(l.sinks) into high bits
+	var sinksN uint32 = uint32(len(l.sinks) << 16)
+
+	// Store level|sinksN
+	minLevel := *l.level & levelMask
+	atomic.StoreUint32(l.level, minLevel|sinksN)
 }
 
 func (l *intLogger) DeregisterSink(logger Logger) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	delete(l.sinks, logger)
+
+	// Shift len(l.sinks) into high bits
+	var sinksN uint32 = uint32(len(l.sinks) << 16)
+
+	// Store level|sinksN
+	minLevel := *l.level & levelMask
+	atomic.StoreUint32(l.level, minLevel|sinksN)
 }
+
+const (
+	// sinksShift is number of bits to shift to get len(sinks)
+	sinksShift = 16
+
+	// levelMask is the mask for the level bits
+	levelMask = 0xff
+)
 
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
-	if level < Level(atomic.LoadInt32(l.level)) && len(l.sinks) == 0 {
+	rawLevel := atomic.LoadUint32(l.level)
+
+	// minLevel is lowest 8 bits
+	minLevel := Level(rawLevel & 0xff)
+
+	// shift to get len(l.sinks)
+	sinksN := rawLevel >> sinksShift
+
+	if level < minLevel && sinksN == 0 {
 		return
 	}
 
@@ -137,7 +169,8 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 			continue
 		}
 
-		if level < Level(atomic.LoadInt32(lh.level)) {
+		minLevel := Level(atomic.LoadUint32(lh.level) & 0xff)
+		if level < minLevel {
 			continue
 		}
 
@@ -153,7 +186,7 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 		lh.writer.Flush(level)
 	}
 
-	if level < Level(atomic.LoadInt32(l.level)) {
+	if level < minLevel {
 		return
 	}
 
@@ -463,27 +496,27 @@ func (l *intLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (l *intLogger) IsTrace() bool {
-	return Level(atomic.LoadInt32(l.level)) == Trace
+	return Level(atomic.LoadUint32(l.level)&levelMask) == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (l *intLogger) IsDebug() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Debug
+	return Level(atomic.LoadUint32(l.level)&levelMask) <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (l *intLogger) IsInfo() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Info
+	return Level(atomic.LoadUint32(l.level)&levelMask) <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (l *intLogger) IsWarn() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Warn
+	return Level(atomic.LoadUint32(l.level)&levelMask) <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (l *intLogger) IsError() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Error
+	return Level(atomic.LoadUint32(l.level)&levelMask) <= Error
 }
 
 // Return a sub-Logger for which every emitted log message will contain
@@ -555,7 +588,15 @@ func (l *intLogger) ResetNamed(name string) Logger {
 // Update the logging level on-the-fly. This will affect all subloggers as
 // well.
 func (l *intLogger) SetLevel(level Level) {
-	atomic.StoreInt32(l.level, int32(level))
+	// Must acquire lock to get len(l.sinks)
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	// Shift len(l.sinks) into high bits
+	var sinksN uint32 = uint32(len(l.sinks) << 16)
+
+	// Store level|sinksN
+	atomic.StoreUint32(l.level, uint32(level)|sinksN)
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This
