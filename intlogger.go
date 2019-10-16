@@ -104,12 +104,16 @@ func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
 	return New(opts).(MultiSinkLogger)
 }
 
-func (l *intLogger) RegisterSink(logger Logger) {
+func (l *intLogger) RegisterSink(logger Logger) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	if _, ok := l.sinks[logger]; ok {
-		return
+		return nil
+	}
+
+	if n := len(l.sinks); n == (1<<16)-1 {
+		return fmt.Errorf("maximum sinks registered: %d", n)
 	}
 
 	l.sinks[logger] = struct{}{}
@@ -120,6 +124,7 @@ func (l *intLogger) RegisterSink(logger Logger) {
 	// Store level|sinksN
 	minLevel := *l.level & levelMask
 	atomic.StoreUint32(l.level, minLevel|sinksN)
+	return nil
 }
 
 func (l *intLogger) DeregisterSink(logger Logger) {
