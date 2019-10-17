@@ -16,7 +16,6 @@ func newWriter(w io.Writer, color bool) *writer {
 }
 
 func (w *writer) Flush(level Level) (err error) {
-
 	var unwritten = w.b.Bytes()
 
 	if w.color {
