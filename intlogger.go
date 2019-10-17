@@ -160,7 +160,6 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-
 	l.writer.WriteString(t.Format(l.timeFormat))
 	l.writer.WriteByte(' ')
 

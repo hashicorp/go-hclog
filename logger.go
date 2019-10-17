@@ -174,7 +174,7 @@ type LoggerOptions struct {
 	// The time format to use instead of the default
 	TimeFormat string
 
-	// Color the output. Colored logs are only avaiable for io.Writers that
+	// Color the output. On Windows, colored logs are only avaiable for io.Writers that
 	// are concretely instances of *os.File.
 	Color bool
 }
