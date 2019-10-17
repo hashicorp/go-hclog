@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -15,6 +16,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/fatih/color"
+	colorable "github.com/mattn/go-colorable"
 )
 
 // TimeFormat to use for logging. This is a version of RFC3339 that contains
@@ -31,6 +35,14 @@ var (
 		Info:  "[INFO] ",
 		Warn:  "[WARN] ",
 		Error: "[ERROR]",
+	}
+
+	_levelToColor = map[Level]*color.Color{
+		Debug: color.New(color.FgHiWhite),
+		Trace: color.New(color.FgHiGreen),
+		Info:  color.New(color.FgHiBlue),
+		Warn:  color.New(color.FgHiYellow),
+		Error: color.New(color.FgHiRed),
 	}
 )
 
@@ -65,6 +77,12 @@ func New(opts *LoggerOptions) Logger {
 		output = DefaultOutput
 	}
 
+	if fi, ok := output.(*os.File); ok && opts.Color {
+		output = colorable.NewColorable(fi)
+	} else if opts.Color {
+		panic("Cannot enable coloring of non-file Writers")
+	}
+
 	level := opts.Level
 	if level == NoLevel {
 		level = DefaultLevel
@@ -81,7 +99,7 @@ func New(opts *LoggerOptions) Logger {
 		name:       opts.Name,
 		timeFormat: TimeFormat,
 		mutex:      mutex,
-		writer:     newWriter(output),
+		writer:     newWriter(output, opts.Color),
 		level:      new(int32),
 	}
 
@@ -146,6 +164,7 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
+
 	l.writer.WriteString(t.Format(l.timeFormat))
 	l.writer.WriteByte(' ')
 

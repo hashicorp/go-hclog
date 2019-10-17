@@ -6,19 +6,28 @@ import (
 )
 
 type writer struct {
-	b bytes.Buffer
-	w io.Writer
+	b     bytes.Buffer
+	w     io.Writer
+	color bool
 }
 
-func newWriter(w io.Writer) *writer {
-	return &writer{w: w}
+func newWriter(w io.Writer, color bool) *writer {
+	return &writer{w: w, color: color}
 }
 
 func (w *writer) Flush(level Level) (err error) {
+
+	var unwritten = w.b.Bytes()
+
+	if w.color {
+		color := _levelToColor[level]
+		unwritten = []byte(color.Sprintf("%s", unwritten))
+	}
+
 	if lw, ok := w.w.(LevelWriter); ok {
-		_, err = lw.LevelWrite(level, w.b.Bytes())
+		_, err = lw.LevelWrite(level, unwritten)
 	} else {
-		_, err = w.w.Write(w.b.Bytes())
+		_, err = w.w.Write(unwritten)
 	}
 	w.b.Reset()
 	return err
