@@ -8,17 +8,17 @@ import (
 type writer struct {
 	b     bytes.Buffer
 	w     io.Writer
-	color bool
+	color ColorOption
 }
 
-func newWriter(w io.Writer, color bool) *writer {
+func newWriter(w io.Writer, color ColorOption) *writer {
 	return &writer{w: w, color: color}
 }
 
 func (w *writer) Flush(level Level) (err error) {
 	var unwritten = w.b.Bytes()
 
-	if w.color {
+	if w.color != ColorOff {
 		color := _levelToColor[level]
 		unwritten = []byte(color.Sprintf("%s", unwritten))
 	}

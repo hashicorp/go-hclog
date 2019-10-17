@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -75,10 +76,6 @@ func New(opts *LoggerOptions) Logger {
 		output = DefaultOutput
 	}
 
-	if opts.Color {
-		output = colorize(output)
-	}
-
 	level := opts.Level
 	if level == NoLevel {
 		level = DefaultLevel
@@ -98,6 +95,8 @@ func New(opts *LoggerOptions) Logger {
 		writer:     newWriter(output, opts.Color),
 		level:      new(int32),
 	}
+
+	l.setColorization(opts)
 
 	if opts.TimeFormat != "" {
 		l.timeFormat = opts.TimeFormat
@@ -538,4 +537,14 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		inferLevels: opts.InferLevels,
 		forceLevel:  opts.ForceLevel,
 	}
+}
+
+// checks if the underlying io.Writer is a file, and
+// panics if not. For use by colorization.
+func (l *intLogger) checkWriterIsFile() *os.File {
+	fi, ok := l.writer.w.(*os.File)
+	if !ok {
+		panic("Cannot enable coloring of non-file Writers")
+	}
+	return fi
 }
