@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -18,7 +17,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	colorable "github.com/mattn/go-colorable"
 )
 
 // TimeFormat to use for logging. This is a version of RFC3339 that contains
@@ -77,10 +75,8 @@ func New(opts *LoggerOptions) Logger {
 		output = DefaultOutput
 	}
 
-	if fi, ok := output.(*os.File); ok && opts.Color {
-		output = colorable.NewColorable(fi)
-	} else if opts.Color {
-		panic("Cannot enable coloring of non-file Writers")
+	if opts.Color {
+		output = colorize(output)
 	}
 
 	level := opts.Level
