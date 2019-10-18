@@ -136,6 +136,21 @@ type Logger interface {
 	StandardWriter(opts *StandardLoggerOptions) io.Writer
 }
 
+type SinkOptions struct {
+	Output     io.Writer
+	Level      Level
+	JSONFormat bool
+}
+
+type MultiSinkLogger interface {
+	Logger
+
+	Level() Level
+
+	RegisterSink(*Sink)
+	DeregisterSink(*Sink)
+}
+
 // StandardLoggerOptions can be used to configure a new standard logger.
 type StandardLoggerOptions struct {
 	// Indicate that some minimal parsing should be done on strings to try

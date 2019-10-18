@@ -606,6 +606,65 @@ func TestLogger_JSON(t *testing.T) {
 	})
 }
 
+func TestMultiSinkLogger(t *testing.T) {
+	t.Run("Sends output to both sink and logger", func(t *testing.T) {
+		var logBuf bytes.Buffer
+		var sinkBuf bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  Info,
+			Name:   "test",
+			Output: &logBuf,
+		})
+
+		sink := NewSink(&SinkOptions{
+			Level:  Info,
+			Output: &sinkBuf,
+		})
+		logger.RegisterSink(sink)
+
+		logger.Info("test info log", "who", "programmer")
+
+		str := logBuf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  test: test info log: who=programmer\n", rest)
+
+		str = sinkBuf.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  test: test info log: who=programmer\n", rest)
+
+	})
+
+	t.Run("Sends output to debug sink when logger is lower", func(t *testing.T) {
+		var logBuf bytes.Buffer
+		var sinkBuf bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  Info,
+			Name:   "test",
+			Output: &logBuf,
+		})
+
+		sink := NewSink(&SinkOptions{
+			Level:  Debug,
+			Output: &sinkBuf,
+		})
+
+		logger.RegisterSink(sink)
+
+		logger.Debug("test debug")
+
+		str := sinkBuf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[DEBUG] test: test debug\n", rest)
+
+	})
+}
+
 type customErrJSON struct {
 	Message string
 }
