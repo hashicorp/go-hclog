@@ -161,7 +161,7 @@ func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
 
 // Non-JSON logging format function
 func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
-	return logImpl(&logLine{
+	return build(&logLine{
 		w:       l.writer,
 		t:       t,
 		tfmt:    l.timeFormat,
@@ -173,7 +173,7 @@ func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface
 
 // JSON logging function
 func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
-	return logJSONImpl(&logLine{
+	return buildJSON(&logLine{
 		w:       l.writer,
 		t:       t,
 		tfmt:    l.timeFormat,
@@ -210,42 +210,27 @@ func (l *sinkLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (l *sinkLogger) IsTrace() bool {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	return Level(l.level) == Trace
+	return Level(atomic.LoadInt32(l.lowestLevel)) == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (l *sinkLogger) IsDebug() bool {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	return Level(l.level) <= Debug
+	return Level(atomic.LoadInt32(l.lowestLevel)) <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (l *sinkLogger) IsInfo() bool {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	return Level(l.level) <= Info
+	return Level(atomic.LoadInt32(l.lowestLevel)) <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (l *sinkLogger) IsWarn() bool {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	return Level(l.level) <= Warn
+	return Level(atomic.LoadInt32(l.lowestLevel)) <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (l *sinkLogger) IsError() bool {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	return Level(l.level) <= Error
+	return Level(atomic.LoadInt32(l.lowestLevel)) <= Error
 }
 
 // Return a sub-Logger for which every emitted log message will contain
@@ -325,7 +310,7 @@ func (l *sinkLogger) SetLevel(level Level) {
 		atomic.StoreInt32(l.lowestLevel, int32(level))
 	}
 
-	l.level = level
+	l.level = int32(level)
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This

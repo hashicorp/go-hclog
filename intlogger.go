@@ -141,7 +141,7 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-	line := logImpl(&logLine{
+	line := build(&logLine{
 		w:       l.writer,
 		t:       t,
 		tfmt:    l.timeFormat,
@@ -155,7 +155,7 @@ func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 
 // JSON logging function
 func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) {
-	line := logJSONImpl(&logLine{
+	line := buildJSON(&logLine{
 		w:       l.writer,
 		t:       t,
 		tfmt:    l.timeFormat,

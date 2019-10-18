@@ -57,7 +57,7 @@ func (ll *logLine) jsonMapEntry(t time.Time, level Level, msg string) map[string
 	return vals
 }
 
-func logJSONImpl(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
+func buildJSON(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
 	var line bytes.Buffer
 	vals := ll.jsonMapEntry(ll.t, level, msg)
 	args = append(ll.implied, args...)
@@ -110,7 +110,7 @@ func logJSONImpl(ll *logLine, level Level, msg string, args ...interface{}) byte
 	return line
 }
 
-func logImpl(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
+func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
 	var line bytes.Buffer
 
 	line.WriteString(ll.t.Format(ll.tfmt))
