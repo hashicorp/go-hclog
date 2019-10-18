@@ -29,8 +29,7 @@ var (
 	}
 )
 
-type logLine struct {
-	w       *writer
+type lineDetails struct {
 	t       time.Time
 	tfmt    string
 	name    string
@@ -38,128 +37,10 @@ type logLine struct {
 	implied []interface{}
 }
 
-func (ll *logLine) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {
-	vals := map[string]interface{}{
-		"@message":   msg,
-		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
-	}
-
-	var levelStr string
-	switch level {
-	case Error:
-		levelStr = "error"
-	case Warn:
-		levelStr = "warn"
-	case Info:
-		levelStr = "info"
-	case Debug:
-		levelStr = "debug"
-	case Trace:
-		levelStr = "trace"
-	default:
-		levelStr = "all"
-	}
-
-	vals["@level"] = levelStr
-
-	if ll.name != "" {
-		vals["@module"] = ll.name
-	}
-
-	if ll.caller {
-		if _, file, line, ok := runtime.Caller(5); ok {
-			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
-		}
-	}
-	return vals
-}
-
-func buildJSON(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
-	var line bytes.Buffer
-	vals := ll.jsonMapEntry(ll.t, level, msg)
-	args = append(ll.implied, args...)
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				vals["stacktrace"] = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		for i := 0; i < len(args); i = i + 2 {
-			if _, ok := args[i].(string); !ok {
-				// As this is the logging function not much we can do here
-				// without injecting into logs...
-				continue
-			}
-			val := args[i+1]
-			switch sv := val.(type) {
-			case error:
-				// Check if val is of type error. If error type doesn't
-				// implement json.Marshaler or encoding.TextMarshaler
-				// then set val to err.Error() so that it gets marshaled
-				switch sv.(type) {
-				case json.Marshaler, encoding.TextMarshaler:
-				default:
-					val = sv.Error()
-				}
-			case Format:
-				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
-			}
-
-			vals[args[i].(string)] = val
-		}
-	}
-	err := json.NewEncoder(&line).Encode(vals)
-	if err != nil {
-		if _, ok := err.(*json.UnsupportedTypeError); ok {
-			plainVal := ll.jsonMapEntry(ll.t, level, msg)
-			plainVal["@warn"] = errJsonUnsupportedTypeMsg
-
-			json.NewEncoder(&line).Encode(plainVal)
-		}
-	}
-
-	return line
-}
-
-// Cleanup a path by returning the last 2 segments of the path only.
-func trimCallerPath(path string) string {
-	// lovely borrowed from zap
-	// nb. To make sure we trim the path correctly on Windows too, we
-	// counter-intuitively need to use '/' and *not* os.PathSeparator here,
-	// because the path given originates from Go stdlib, specifically
-	// runtime.Caller() which (as of Mar/17) returns forward slashes even on
-	// Windows.
-	//
-	// See https://github.com/golang/go/issues/3335
-	// and https://github.com/golang/go/issues/18151
-	//
-	// for discussion on the issue on Go side.
-
-	// Find the last separator.
-	idx := strings.LastIndexByte(path, '/')
-	if idx == -1 {
-		return path
-	}
-
-	// Find the penultimate separator.
-	idx = strings.LastIndexByte(path[:idx], '/')
-	if idx == -1 {
-		return path
-	}
-
-	return path[idx+1:]
-}
-
-func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {
+func (l *lineDetails) build(level Level, msg string, args ...interface{}) bytes.Buffer {
 	var line bytes.Buffer
 
-	line.WriteString(ll.t.Format(ll.tfmt))
+	line.WriteString(l.t.Format(l.tfmt))
 	line.WriteByte(' ')
 
 	s, ok := _levelToBracket[level]
@@ -169,7 +50,7 @@ func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buff
 		line.WriteString("[?????]")
 	}
 
-	if ll.caller {
+	if l.caller {
 		if _, file, l, ok := runtime.Caller(4); ok {
 			line.WriteByte(' ')
 			line.WriteString(trimCallerPath(file))
@@ -181,14 +62,14 @@ func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buff
 
 	line.WriteByte(' ')
 
-	if ll.name != "" {
-		line.WriteString(ll.name)
+	if l.name != "" {
+		line.WriteString(l.name)
 		line.WriteString(": ")
 	}
 
 	line.WriteString(msg)
 
-	args = append(ll.implied, args...)
+	args = append(l.implied, args...)
 
 	var stacktrace CapturedStacktrace
 
@@ -270,6 +151,123 @@ func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buff
 
 	return line
 
+}
+func (l *lineDetails) buildJSON(level Level, msg string, args ...interface{}) bytes.Buffer {
+	var line bytes.Buffer
+	vals := l.jsonMapEntry(l.t, level, msg)
+	args = append(l.implied, args...)
+
+	if args != nil && len(args) > 0 {
+		if len(args)%2 != 0 {
+			cs, ok := args[len(args)-1].(CapturedStacktrace)
+			if ok {
+				args = args[:len(args)-1]
+				vals["stacktrace"] = cs
+			} else {
+				args = append(args, "<unknown>")
+			}
+		}
+
+		for i := 0; i < len(args); i = i + 2 {
+			if _, ok := args[i].(string); !ok {
+				// As this is the logging function not much we can do here
+				// without injecting into logs...
+				continue
+			}
+			val := args[i+1]
+			switch sv := val.(type) {
+			case error:
+				// Check if val is of type error. If error type doesn't
+				// implement json.Marshaler or encoding.TextMarshaler
+				// then set val to err.Error() so that it gets marshaled
+				switch sv.(type) {
+				case json.Marshaler, encoding.TextMarshaler:
+				default:
+					val = sv.Error()
+				}
+			case Format:
+				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
+			}
+
+			vals[args[i].(string)] = val
+		}
+	}
+	err := json.NewEncoder(&line).Encode(vals)
+	if err != nil {
+		if _, ok := err.(*json.UnsupportedTypeError); ok {
+			plainVal := l.jsonMapEntry(l.t, level, msg)
+			plainVal["@warn"] = errJsonUnsupportedTypeMsg
+
+			json.NewEncoder(&line).Encode(plainVal)
+		}
+	}
+
+	return line
+}
+
+func (l *lineDetails) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {
+	vals := map[string]interface{}{
+		"@message":   msg,
+		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
+	}
+
+	var levelStr string
+	switch level {
+	case Error:
+		levelStr = "error"
+	case Warn:
+		levelStr = "warn"
+	case Info:
+		levelStr = "info"
+	case Debug:
+		levelStr = "debug"
+	case Trace:
+		levelStr = "trace"
+	default:
+		levelStr = "all"
+	}
+
+	vals["@level"] = levelStr
+
+	if l.name != "" {
+		vals["@module"] = l.name
+	}
+
+	if l.caller {
+		if _, file, line, ok := runtime.Caller(5); ok {
+			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
+		}
+	}
+	return vals
+}
+
+// Cleanup a path by returning the last 2 segments of the path only.
+func trimCallerPath(path string) string {
+	// lovely borrowed from zap
+	// nb. To make sure we trim the path correctly on Windows too, we
+	// counter-intuitively need to use '/' and *not* os.PathSeparator here,
+	// because the path given originates from Go stdlib, specifically
+	// runtime.Caller() which (as of Mar/17) returns forward slashes even on
+	// Windows.
+	//
+	// See https://github.com/golang/go/issues/3335
+	// and https://github.com/golang/go/issues/18151
+	//
+	// for discussion on the issue on Go side.
+
+	// Find the last separator.
+	idx := strings.LastIndexByte(path, '/')
+	if idx == -1 {
+		return path
+	}
+
+	// Find the penultimate separator.
+	idx = strings.LastIndexByte(path[:idx], '/')
+	if idx == -1 {
+		return path
+	}
+
+	return path[idx+1:]
 }
 
 func renderSlice(v reflect.Value) string {

@@ -161,26 +161,27 @@ func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
 
 // Non-JSON logging format function
 func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
-	return build(&logLine{
-		w:       l.writer,
+	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
 		name:    l.name,
 		caller:  l.caller,
 		implied: l.implied,
-	}, level, msg, args...)
+	}
+	return ld.build(level, msg, args...)
 }
 
 // JSON logging function
 func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
-	return buildJSON(&logLine{
-		w:       l.writer,
+	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
 		name:    l.name,
 		caller:  l.caller,
 		implied: l.implied,
-	}, level, msg, args...)
+	}
+
+	return ld.buildJSON(level, msg, args...)
 }
 
 // Emit the message and args at DEBUG level

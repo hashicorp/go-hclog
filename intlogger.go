@@ -92,30 +92,28 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-	line := build(&logLine{
-		w:       l.writer,
+	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
 		name:    l.name,
 		caller:  l.caller,
 		implied: l.implied,
-	}, level, msg, args...)
-
-	l.writer.Write(line.Bytes())
+	}
+	buf := ld.build(level, msg, args...)
+	l.writer.Write(buf.Bytes())
 }
 
 // JSON logging function
 func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) {
-	line := buildJSON(&logLine{
-		w:       l.writer,
+	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
 		name:    l.name,
 		caller:  l.caller,
 		implied: l.implied,
-	}, level, msg, args...)
-
-	l.writer.Write(line.Bytes())
+	}
+	buf := ld.buildJSON(level, msg, args...)
+	l.writer.Write(buf.Bytes())
 }
 
 // Emit the message and args at DEBUG level
