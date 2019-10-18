@@ -689,7 +689,6 @@ func TestMultiSinkLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		assert.Equal(t, "[DEBUG] test.sublogger: test sublogger\n", rest)
-
 	})
 }
 

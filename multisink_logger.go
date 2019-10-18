@@ -94,12 +94,12 @@ func (l *sinkLogger) RegisterSink(sink *Sink) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	if sink.level < Level(atomic.LoadInt32(l.lowestLevel)) {
-		atomic.StoreInt32(l.lowestLevel, int32(sink.level))
-	}
-
 	if _, ok := l.sinks[sink]; ok {
 		return
+	}
+
+	if sink.level < Level(atomic.LoadInt32(l.lowestLevel)) {
+		atomic.StoreInt32(l.lowestLevel, int32(sink.level))
 	}
 
 	l.sinks[sink] = struct{}{}
