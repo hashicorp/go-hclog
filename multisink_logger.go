@@ -1,7 +1,6 @@
 package hclog
 
 import (
-	"bytes"
 	"io"
 	"log"
 	"sort"
@@ -26,7 +25,7 @@ type sinkLogger struct {
 	// those derived loggers share the bufio.Writer as well.
 	mutex       *sync.Mutex
 	writer      *writer
-	level       int32
+	level       Level
 	lowestLevel *int32
 
 	sinks map[*Sink]struct{}
@@ -62,7 +61,7 @@ func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
 		timeFormat:  TimeFormat,
 		mutex:       mutex,
 		writer:      newWriter(output),
-		level:       int32(level),
+		level:       level,
 		lowestLevel: new(int32),
 		sinks:       make(map[*Sink]struct{}),
 	}
@@ -123,19 +122,23 @@ func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	var line bytes.Buffer
-	var lineJSON bytes.Buffer
+	var line []byte
+	var lineJSON []byte
 	for sink := range l.sinks {
 		if level < Level(sink.level) {
 			continue
 		}
 
 		if sink.json {
-			lineJSON = l.logJSON(t, level, msg, args...)
-			sink.writer.Write(lineJSON.Bytes())
+			if len(lineJSON) == 0 {
+				lineJSON = l.logJSON(t, level, msg, args...)
+			}
+			sink.writer.Write(lineJSON)
 		} else {
-			line = l.log(t, level, msg, args...)
-			sink.writer.Write(line.Bytes())
+			if len(line) == 0 {
+				line = l.log(t, level, msg, args...)
+			}
+			sink.writer.Write(line)
 		}
 		sink.writer.Flush(level)
 	}
@@ -145,22 +148,22 @@ func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
 	}
 
 	if l.json {
-		if lineJSON.Len() < 1 {
+		if len(lineJSON) == 0 {
 			lineJSON = l.logJSON(t, level, msg, args...)
 		}
-		l.writer.Write(line.Bytes())
+		l.writer.Write(line)
 	} else {
-		if line.Len() < 1 {
+		if len(line) == 0 {
 			line = l.log(t, level, msg, args...)
 		}
-		l.writer.Write(line.Bytes())
+		l.writer.Write(line)
 	}
 
 	l.writer.Flush(level)
 }
 
 // Non-JSON logging format function
-func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
+func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) []byte {
 	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
@@ -172,7 +175,7 @@ func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface
 }
 
 // JSON logging function
-func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
+func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) []byte {
 	ld := &lineDetails{
 		t:       t,
 		tfmt:    l.timeFormat,
@@ -311,7 +314,7 @@ func (l *sinkLogger) SetLevel(level Level) {
 		atomic.StoreInt32(l.lowestLevel, int32(level))
 	}
 
-	l.level = int32(level)
+	l.level = level
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This

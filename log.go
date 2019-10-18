@@ -37,7 +37,7 @@ type lineDetails struct {
 	implied []interface{}
 }
 
-func (l *lineDetails) build(level Level, msg string, args ...interface{}) bytes.Buffer {
+func (l *lineDetails) build(level Level, msg string, args ...interface{}) []byte {
 	var line bytes.Buffer
 
 	line.WriteString(l.t.Format(l.tfmt))
@@ -149,10 +149,10 @@ func (l *lineDetails) build(level Level, msg string, args ...interface{}) bytes.
 		line.WriteString(string(stacktrace))
 	}
 
-	return line
+	return line.Bytes()
 
 }
-func (l *lineDetails) buildJSON(level Level, msg string, args ...interface{}) bytes.Buffer {
+func (l *lineDetails) buildJSON(level Level, msg string, args ...interface{}) []byte {
 	var line bytes.Buffer
 	vals := l.jsonMapEntry(l.t, level, msg)
 	args = append(l.implied, args...)
@@ -202,7 +202,7 @@ func (l *lineDetails) buildJSON(level Level, msg string, args ...interface{}) by
 		}
 	}
 
-	return line
+	return line.Bytes()
 }
 
 func (l *lineDetails) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {

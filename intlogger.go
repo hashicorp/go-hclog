@@ -99,8 +99,7 @@ func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{
 		caller:  l.caller,
 		implied: l.implied,
 	}
-	buf := ld.build(level, msg, args...)
-	l.writer.Write(buf.Bytes())
+	l.writer.Write(ld.build(level, msg, args...))
 }
 
 // JSON logging function
@@ -112,8 +111,7 @@ func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interf
 		caller:  l.caller,
 		implied: l.implied,
 	}
-	buf := ld.buildJSON(level, msg, args...)
-	l.writer.Write(buf.Bytes())
+	l.writer.Write(ld.buildJSON(level, msg, args...))
 }
 
 // Emit the message and args at DEBUG level
