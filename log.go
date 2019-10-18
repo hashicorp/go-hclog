@@ -12,6 +12,23 @@ import (
 	"time"
 )
 
+// TimeFormat to use for logging. This is a version of RFC3339 that contains
+// contains millisecond precision
+const TimeFormat = "2006-01-02T15:04:05.000Z0700"
+
+// errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
+const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
+
+var (
+	_levelToBracket = map[Level]string{
+		Debug: "[DEBUG]",
+		Trace: "[TRACE]",
+		Info:  "[INFO] ",
+		Warn:  "[WARN] ",
+		Error: "[ERROR]",
+	}
+)
+
 type logLine struct {
 	w       *writer
 	t       time.Time
@@ -108,6 +125,35 @@ func buildJSON(ll *logLine, level Level, msg string, args ...interface{}) bytes.
 	}
 
 	return line
+}
+
+// Cleanup a path by returning the last 2 segments of the path only.
+func trimCallerPath(path string) string {
+	// lovely borrowed from zap
+	// nb. To make sure we trim the path correctly on Windows too, we
+	// counter-intuitively need to use '/' and *not* os.PathSeparator here,
+	// because the path given originates from Go stdlib, specifically
+	// runtime.Caller() which (as of Mar/17) returns forward slashes even on
+	// Windows.
+	//
+	// See https://github.com/golang/go/issues/3335
+	// and https://github.com/golang/go/issues/18151
+	//
+	// for discussion on the issue on Go side.
+
+	// Find the last separator.
+	idx := strings.LastIndexByte(path, '/')
+	if idx == -1 {
+		return path
+	}
+
+	// Find the penultimate separator.
+	idx = strings.LastIndexByte(path[:idx], '/')
+	if idx == -1 {
+		return path
+	}
+
+	return path[idx+1:]
 }
 
 func build(ll *logLine, level Level, msg string, args ...interface{}) bytes.Buffer {

@@ -1,32 +1,12 @@
 package hclog
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"runtime"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-)
-
-// TimeFormat to use for logging. This is a version of RFC3339 that contains
-// contains millisecond precision
-const TimeFormat = "2006-01-02T15:04:05.000Z0700"
-
-// errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
-const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
-
-var (
-	_levelToBracket = map[Level]string{
-		Debug: "[DEBUG]",
-		Trace: "[TRACE]",
-		Info:  "[INFO] ",
-		Warn:  "[WARN] ",
-		Error: "[ERROR]",
-	}
 )
 
 // Make sure that intLogger is a Logger
@@ -110,35 +90,6 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 	l.writer.Flush(level)
 }
 
-// Cleanup a path by returning the last 2 segments of the path only.
-func trimCallerPath(path string) string {
-	// lovely borrowed from zap
-	// nb. To make sure we trim the path correctly on Windows too, we
-	// counter-intuitively need to use '/' and *not* os.PathSeparator here,
-	// because the path given originates from Go stdlib, specifically
-	// runtime.Caller() which (as of Mar/17) returns forward slashes even on
-	// Windows.
-	//
-	// See https://github.com/golang/go/issues/3335
-	// and https://github.com/golang/go/issues/18151
-	//
-	// for discussion on the issue on Go side.
-
-	// Find the last separator.
-	idx := strings.LastIndexByte(path, '/')
-	if idx == -1 {
-		return path
-	}
-
-	// Find the penultimate separator.
-	idx = strings.LastIndexByte(path[:idx], '/')
-	if idx == -1 {
-		return path
-	}
-
-	return path[idx+1:]
-}
-
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
 	line := build(&logLine{
@@ -165,42 +116,6 @@ func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interf
 	}, level, msg, args...)
 
 	l.writer.Write(line.Bytes())
-}
-
-func (l intLogger) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {
-	vals := map[string]interface{}{
-		"@message":   msg,
-		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
-	}
-
-	var levelStr string
-	switch level {
-	case Error:
-		levelStr = "error"
-	case Warn:
-		levelStr = "warn"
-	case Info:
-		levelStr = "info"
-	case Debug:
-		levelStr = "debug"
-	case Trace:
-		levelStr = "trace"
-	default:
-		levelStr = "all"
-	}
-
-	vals["@level"] = levelStr
-
-	if l.name != "" {
-		vals["@module"] = l.name
-	}
-
-	if l.caller {
-		if _, file, line, ok := runtime.Caller(4); ok {
-			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
-		}
-	}
-	return vals
 }
 
 // Emit the message and args at DEBUG level
