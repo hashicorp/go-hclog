@@ -145,8 +145,6 @@ type SinkOptions struct {
 type MultiSinkLogger interface {
 	Logger
 
-	Level() Level
-
 	RegisterSink(*Sink)
 	DeregisterSink(*Sink)
 }

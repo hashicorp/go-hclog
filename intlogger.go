@@ -1,16 +1,11 @@
 package hclog
 
 import (
-	"bytes"
-	"encoding"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"reflect"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -146,207 +141,30 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-	l.writer.WriteString(t.Format(l.timeFormat))
-	l.writer.WriteByte(' ')
+	line := logImpl(&logLine{
+		w:       l.writer,
+		t:       t,
+		tfmt:    l.timeFormat,
+		name:    l.name,
+		caller:  l.caller,
+		implied: l.implied,
+	}, level, msg, args...)
 
-	s, ok := _levelToBracket[level]
-	if ok {
-		l.writer.WriteString(s)
-	} else {
-		l.writer.WriteString("[?????]")
-	}
-
-	if l.caller {
-		if _, file, line, ok := runtime.Caller(3); ok {
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(trimCallerPath(file))
-			l.writer.WriteByte(':')
-			l.writer.WriteString(strconv.Itoa(line))
-			l.writer.WriteByte(':')
-		}
-	}
-
-	l.writer.WriteByte(' ')
-
-	if l.name != "" {
-		l.writer.WriteString(l.name)
-		l.writer.WriteString(": ")
-	}
-
-	l.writer.WriteString(msg)
-
-	args = append(l.implied, args...)
-
-	var stacktrace CapturedStacktrace
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				stacktrace = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		l.writer.WriteByte(':')
-
-	FOR:
-		for i := 0; i < len(args); i = i + 2 {
-			var (
-				val string
-				raw bool
-			)
-
-			switch st := args[i+1].(type) {
-			case string:
-				val = st
-			case int:
-				val = strconv.FormatInt(int64(st), 10)
-			case int64:
-				val = strconv.FormatInt(int64(st), 10)
-			case int32:
-				val = strconv.FormatInt(int64(st), 10)
-			case int16:
-				val = strconv.FormatInt(int64(st), 10)
-			case int8:
-				val = strconv.FormatInt(int64(st), 10)
-			case uint:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint64:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint32:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint16:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint8:
-				val = strconv.FormatUint(uint64(st), 10)
-			case CapturedStacktrace:
-				stacktrace = st
-				continue FOR
-			case Format:
-				val = fmt.Sprintf(st[0].(string), st[1:]...)
-			default:
-				v := reflect.ValueOf(st)
-				if v.Kind() == reflect.Slice {
-					val = l.renderSlice(v)
-					raw = true
-				} else {
-					val = fmt.Sprintf("%v", st)
-				}
-			}
-
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(args[i].(string))
-			l.writer.WriteByte('=')
-
-			if !raw && strings.ContainsAny(val, " \t\n\r") {
-				l.writer.WriteByte('"')
-				l.writer.WriteString(val)
-				l.writer.WriteByte('"')
-			} else {
-				l.writer.WriteString(val)
-			}
-		}
-	}
-
-	l.writer.WriteString("\n")
-
-	if stacktrace != "" {
-		l.writer.WriteString(string(stacktrace))
-	}
-}
-
-func (l *intLogger) renderSlice(v reflect.Value) string {
-	var buf bytes.Buffer
-
-	buf.WriteRune('[')
-
-	for i := 0; i < v.Len(); i++ {
-		if i > 0 {
-			buf.WriteString(", ")
-		}
-
-		sv := v.Index(i)
-
-		var val string
-
-		switch sv.Kind() {
-		case reflect.String:
-			val = sv.String()
-		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
-			val = strconv.FormatInt(sv.Int(), 10)
-		case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			val = strconv.FormatUint(sv.Uint(), 10)
-		default:
-			val = fmt.Sprintf("%v", sv.Interface())
-		}
-
-		if strings.ContainsAny(val, " \t\n\r") {
-			buf.WriteByte('"')
-			buf.WriteString(val)
-			buf.WriteByte('"')
-		} else {
-			buf.WriteString(val)
-		}
-	}
-
-	buf.WriteRune(']')
-
-	return buf.String()
+	l.writer.Write(line.Bytes())
 }
 
 // JSON logging function
 func (l *intLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) {
-	vals := l.jsonMapEntry(t, level, msg)
-	args = append(l.implied, args...)
+	line := logJSONImpl(&logLine{
+		w:       l.writer,
+		t:       t,
+		tfmt:    l.timeFormat,
+		name:    l.name,
+		caller:  l.caller,
+		implied: l.implied,
+	}, level, msg, args...)
 
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				vals["stacktrace"] = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		for i := 0; i < len(args); i = i + 2 {
-			if _, ok := args[i].(string); !ok {
-				// As this is the logging function not much we can do here
-				// without injecting into logs...
-				continue
-			}
-			val := args[i+1]
-			switch sv := val.(type) {
-			case error:
-				// Check if val is of type error. If error type doesn't
-				// implement json.Marshaler or encoding.TextMarshaler
-				// then set val to err.Error() so that it gets marshaled
-				switch sv.(type) {
-				case json.Marshaler, encoding.TextMarshaler:
-				default:
-					val = sv.Error()
-				}
-			case Format:
-				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
-			}
-
-			vals[args[i].(string)] = val
-		}
-	}
-
-	err := json.NewEncoder(l.writer).Encode(vals)
-	if err != nil {
-		if _, ok := err.(*json.UnsupportedTypeError); ok {
-			plainVal := l.jsonMapEntry(t, level, msg)
-			plainVal["@warn"] = errJsonUnsupportedTypeMsg
-
-			json.NewEncoder(l.writer).Encode(plainVal)
-		}
-	}
+	l.writer.Write(line.Bytes())
 }
 
 func (l intLogger) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {

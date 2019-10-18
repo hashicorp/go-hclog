@@ -2,16 +2,9 @@ package hclog
 
 import (
 	"bytes"
-	"encoding"
-	"encoding/json"
-	"fmt"
 	"io"
 	"log"
-	"reflect"
-	"runtime"
 	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,7 +26,7 @@ type sinkLogger struct {
 	// those derived loggers share the bufio.Writer as well.
 	mutex       *sync.Mutex
 	writer      *writer
-	level       *int32
+	level       int32
 	lowestLevel *int32
 
 	sinks map[*Sink]struct{}
@@ -69,7 +62,7 @@ func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
 		timeFormat:  TimeFormat,
 		mutex:       mutex,
 		writer:      newWriter(output),
-		level:       new(int32),
+		level:       int32(level),
 		lowestLevel: new(int32),
 		sinks:       make(map[*Sink]struct{}),
 	}
@@ -79,7 +72,6 @@ func NewMultiSink(opts *LoggerOptions) MultiSinkLogger {
 	}
 
 	atomic.StoreInt32(l.lowestLevel, int32(level))
-	atomic.StoreInt32(l.level, int32(level))
 
 	return l
 }
@@ -119,11 +111,6 @@ func (l *sinkLogger) DeregisterSink(sink *Sink) {
 	delete(l.sinks, sink)
 }
 
-// Level returns the current level
-func (l *sinkLogger) Level() Level {
-	return Level(atomic.LoadInt32(l.level))
-}
-
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
@@ -136,277 +123,64 @@ func (l *sinkLogger) Log(level Level, msg string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
+	var line bytes.Buffer
+	var lineJSON bytes.Buffer
 	for sink := range l.sinks {
 		if level < Level(sink.level) {
 			continue
 		}
 
-		lwriter := l.writer
-		l.writer = sink.writer
-
 		if sink.json {
-			l.logJSON(t, level, msg, args...)
+			lineJSON = l.logJSON(t, level, msg, args...)
+			sink.writer.Write(lineJSON.Bytes())
 		} else {
-			l.log(t, level, msg, args...)
+			line = l.log(t, level, msg, args...)
+			sink.writer.Write(line.Bytes())
 		}
-		l.writer.Flush(level)
-
-		l.writer = lwriter
-
+		sink.writer.Flush(level)
 	}
 
-	if level < Level(atomic.LoadInt32(l.level)) {
+	if level < Level(l.level) {
 		return
 	}
 
 	if l.json {
-		l.logJSON(t, level, msg, args...)
+		if lineJSON.Len() < 1 {
+			lineJSON = l.logJSON(t, level, msg, args...)
+		}
+		l.writer.Write(line.Bytes())
 	} else {
-		l.log(t, level, msg, args...)
+		if line.Len() < 1 {
+			line = l.log(t, level, msg, args...)
+		}
+		l.writer.Write(line.Bytes())
 	}
 
 	l.writer.Flush(level)
 }
 
 // Non-JSON logging format function
-func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) {
-	l.writer.WriteString(t.Format(l.timeFormat))
-	l.writer.WriteByte(' ')
-
-	s, ok := _levelToBracket[level]
-	if ok {
-		l.writer.WriteString(s)
-	} else {
-		l.writer.WriteString("[?????]")
-	}
-
-	if l.caller {
-		if _, file, line, ok := runtime.Caller(3); ok {
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(trimCallerPath(file))
-			l.writer.WriteByte(':')
-			l.writer.WriteString(strconv.Itoa(line))
-			l.writer.WriteByte(':')
-		}
-	}
-
-	l.writer.WriteByte(' ')
-
-	if l.name != "" {
-		l.writer.WriteString(l.name)
-		l.writer.WriteString(": ")
-	}
-
-	l.writer.WriteString(msg)
-
-	args = append(l.implied, args...)
-
-	var stacktrace CapturedStacktrace
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				stacktrace = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		l.writer.WriteByte(':')
-
-	FOR:
-		for i := 0; i < len(args); i = i + 2 {
-			var (
-				val string
-				raw bool
-			)
-
-			switch st := args[i+1].(type) {
-			case string:
-				val = st
-			case int:
-				val = strconv.FormatInt(int64(st), 10)
-			case int64:
-				val = strconv.FormatInt(int64(st), 10)
-			case int32:
-				val = strconv.FormatInt(int64(st), 10)
-			case int16:
-				val = strconv.FormatInt(int64(st), 10)
-			case int8:
-				val = strconv.FormatInt(int64(st), 10)
-			case uint:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint64:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint32:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint16:
-				val = strconv.FormatUint(uint64(st), 10)
-			case uint8:
-				val = strconv.FormatUint(uint64(st), 10)
-			case CapturedStacktrace:
-				stacktrace = st
-				continue FOR
-			case Format:
-				val = fmt.Sprintf(st[0].(string), st[1:]...)
-			default:
-				v := reflect.ValueOf(st)
-				if v.Kind() == reflect.Slice {
-					val = l.renderSlice(v)
-					raw = true
-				} else {
-					val = fmt.Sprintf("%v", st)
-				}
-			}
-
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(args[i].(string))
-			l.writer.WriteByte('=')
-
-			if !raw && strings.ContainsAny(val, " \t\n\r") {
-				l.writer.WriteByte('"')
-				l.writer.WriteString(val)
-				l.writer.WriteByte('"')
-			} else {
-				l.writer.WriteString(val)
-			}
-		}
-	}
-
-	l.writer.WriteString("\n")
-
-	if stacktrace != "" {
-		l.writer.WriteString(string(stacktrace))
-	}
-}
-
-func (l *sinkLogger) renderSlice(v reflect.Value) string {
-	var buf bytes.Buffer
-
-	buf.WriteRune('[')
-
-	for i := 0; i < v.Len(); i++ {
-		if i > 0 {
-			buf.WriteString(", ")
-		}
-
-		sv := v.Index(i)
-
-		var val string
-
-		switch sv.Kind() {
-		case reflect.String:
-			val = sv.String()
-		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
-			val = strconv.FormatInt(sv.Int(), 10)
-		case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			val = strconv.FormatUint(sv.Uint(), 10)
-		default:
-			val = fmt.Sprintf("%v", sv.Interface())
-		}
-
-		if strings.ContainsAny(val, " \t\n\r") {
-			buf.WriteByte('"')
-			buf.WriteString(val)
-			buf.WriteByte('"')
-		} else {
-			buf.WriteString(val)
-		}
-	}
-
-	buf.WriteRune(']')
-
-	return buf.String()
+func (l *sinkLogger) log(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
+	return logImpl(&logLine{
+		w:       l.writer,
+		t:       t,
+		tfmt:    l.timeFormat,
+		name:    l.name,
+		caller:  l.caller,
+		implied: l.implied,
+	}, level, msg, args...)
 }
 
 // JSON logging function
-func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) {
-	vals := l.jsonMapEntry(t, level, msg)
-	args = append(l.implied, args...)
-
-	if args != nil && len(args) > 0 {
-		if len(args)%2 != 0 {
-			cs, ok := args[len(args)-1].(CapturedStacktrace)
-			if ok {
-				args = args[:len(args)-1]
-				vals["stacktrace"] = cs
-			} else {
-				args = append(args, "<unknown>")
-			}
-		}
-
-		for i := 0; i < len(args); i = i + 2 {
-			if _, ok := args[i].(string); !ok {
-				// As this is the logging function not much we can do here
-				// without injecting into logs...
-				continue
-			}
-			val := args[i+1]
-			switch sv := val.(type) {
-			case error:
-				// Check if val is of type error. If error type doesn't
-				// implement json.Marshaler or encoding.TextMarshaler
-				// then set val to err.Error() so that it gets marshaled
-				switch sv.(type) {
-				case json.Marshaler, encoding.TextMarshaler:
-				default:
-					val = sv.Error()
-				}
-			case Format:
-				val = fmt.Sprintf(sv[0].(string), sv[1:]...)
-			}
-
-			vals[args[i].(string)] = val
-		}
-	}
-
-	err := json.NewEncoder(l.writer).Encode(vals)
-	if err != nil {
-		if _, ok := err.(*json.UnsupportedTypeError); ok {
-			plainVal := l.jsonMapEntry(t, level, msg)
-			plainVal["@warn"] = errJsonUnsupportedTypeMsg
-
-			json.NewEncoder(l.writer).Encode(plainVal)
-		}
-	}
-}
-
-func (l sinkLogger) jsonMapEntry(t time.Time, level Level, msg string) map[string]interface{} {
-	vals := map[string]interface{}{
-		"@message":   msg,
-		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
-	}
-
-	var levelStr string
-	switch level {
-	case Error:
-		levelStr = "error"
-	case Warn:
-		levelStr = "warn"
-	case Info:
-		levelStr = "info"
-	case Debug:
-		levelStr = "debug"
-	case Trace:
-		levelStr = "trace"
-	default:
-		levelStr = "all"
-	}
-
-	vals["@level"] = levelStr
-
-	if l.name != "" {
-		vals["@module"] = l.name
-	}
-
-	if l.caller {
-		if _, file, line, ok := runtime.Caller(4); ok {
-			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
-		}
-	}
-	return vals
+func (l *sinkLogger) logJSON(t time.Time, level Level, msg string, args ...interface{}) bytes.Buffer {
+	return logJSONImpl(&logLine{
+		w:       l.writer,
+		t:       t,
+		tfmt:    l.timeFormat,
+		name:    l.name,
+		caller:  l.caller,
+		implied: l.implied,
+	}, level, msg, args...)
 }
 
 // Emit the message and args at DEBUG level
@@ -436,27 +210,42 @@ func (l *sinkLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (l *sinkLogger) IsTrace() bool {
-	return Level(atomic.LoadInt32(l.level)) == Trace
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	return Level(l.level) == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (l *sinkLogger) IsDebug() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Debug
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	return Level(l.level) <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (l *sinkLogger) IsInfo() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Info
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	return Level(l.level) <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (l *sinkLogger) IsWarn() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Warn
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	return Level(l.level) <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (l *sinkLogger) IsError() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Error
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	return Level(l.level) <= Error
 }
 
 // Return a sub-Logger for which every emitted log message will contain
@@ -528,7 +317,15 @@ func (l *sinkLogger) ResetNamed(name string) Logger {
 // Update the logging level on-the-fly. This will affect all subloggers as
 // well.
 func (l *sinkLogger) SetLevel(level Level) {
-	atomic.StoreInt32(l.level, int32(level))
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	currentLowest := atomic.LoadInt32(l.lowestLevel)
+	if level < Level(currentLowest) {
+		atomic.StoreInt32(l.lowestLevel, int32(level))
+	}
+
+	l.level = level
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This
