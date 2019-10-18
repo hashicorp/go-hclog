@@ -280,6 +280,31 @@ func (l *sinkLogger) With(args ...interface{}) Logger {
 
 // Create a new sub-Logger that a name decending from the current name.
 // This is used to create a subsystem specific Logger.
+func (l *sinkLogger) NamedMultiSink(name string) MultiSinkLogger {
+	sl := *l
+
+	if sl.name != "" {
+		sl.name = sl.name + "." + name
+	} else {
+		sl.name = name
+	}
+
+	return &sl
+}
+
+// Create a new sub-Logger with an explicit name. This ignores the current
+// name. This is used to create a standalone logger that doesn't fall
+// within the normal hierarchy.
+func (l *sinkLogger) ResetNamedMultiSink(name string) MultiSinkLogger {
+	sl := *l
+
+	sl.name = name
+
+	return &sl
+}
+
+// Create a new sub-Logger that a name decending from the current name.
+// This is used to create a subsystem specific Logger.
 func (l *sinkLogger) Named(name string) Logger {
 	sl := *l
 
