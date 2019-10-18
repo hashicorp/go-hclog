@@ -663,6 +663,34 @@ func TestMultiSinkLogger(t *testing.T) {
 		assert.Equal(t, "[DEBUG] test: test debug\n", rest)
 
 	})
+
+	t.Run("A new sublogger retains the parents sinks", func(t *testing.T) {
+		var logBuf bytes.Buffer
+		var sinkBuf bytes.Buffer
+
+		logger := NewMultiSink(&LoggerOptions{
+			Level:  Info,
+			Name:   "test",
+			Output: &logBuf,
+		})
+
+		sink := NewSink(&SinkOptions{
+			Level:  Debug,
+			Output: &sinkBuf,
+		})
+		logger.RegisterSink(sink)
+
+		sublogger := logger.Named("sublogger")
+
+		sublogger.Debug("test sublogger")
+
+		str := sinkBuf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[DEBUG] test.sublogger: test sublogger\n", rest)
+
+	})
 }
 
 type customErrJSON struct {
