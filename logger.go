@@ -174,3 +174,11 @@ type LoggerOptions struct {
 	// The time format to use instead of the default
 	TimeFormat string
 }
+
+type SinkAdapter interface {
+	Accept(...)
+}
+
+type SinkAdapterCreator interface {
+	SinkAdapter SinkAdapter()
+}
