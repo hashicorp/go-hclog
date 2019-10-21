@@ -1,13 +1,16 @@
 package hclog
 
-import "sync/atomic"
+import (
+	"sync"
+	"sync/atomic"
+)
 
 type InterceptLogger struct {
 	Logger
 
+	sync.Mutex
 	sinkCount *int32
-
-	Sinks map[SinkAdapter]struct{}
+	Sinks     map[SinkAdapter]struct{}
 }
 
 func NewInterceptLogger(root Logger) *InterceptLogger {
@@ -28,6 +31,8 @@ func (i *InterceptLogger) Debug(msg string, args ...interface{}) {
 		return
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	for s := range i.Sinks {
 		s.Accept(i.Name(), Debug, msg, i.retrieveImplied(args...)...)
 	}
@@ -39,6 +44,8 @@ func (i *InterceptLogger) Trace(msg string, args ...interface{}) {
 		return
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	for s := range i.Sinks {
 		s.Accept(i.Name(), Trace, msg, i.retrieveImplied(args...)...)
 	}
@@ -50,6 +57,8 @@ func (i *InterceptLogger) Info(msg string, args ...interface{}) {
 		return
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	for s := range i.Sinks {
 		s.Accept(i.Name(), Info, msg, i.retrieveImplied(args...)...)
 	}
@@ -61,6 +70,8 @@ func (i *InterceptLogger) Warn(msg string, args ...interface{}) {
 		return
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	for s := range i.Sinks {
 		s.Accept(i.Name(), Warn, msg, i.retrieveImplied(args...)...)
 	}
@@ -72,6 +83,8 @@ func (i *InterceptLogger) Error(msg string, args ...interface{}) {
 		return
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	for s := range i.Sinks {
 		s.Accept(i.Name(), Error, msg, i.retrieveImplied(args...)...)
 	}
