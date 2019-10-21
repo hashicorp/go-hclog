@@ -126,8 +126,12 @@ type Logger interface {
 	// Indicate if ERROR logs would be emitted. This and the other Is* guards
 	IsError() bool
 
+	ImpliedArgs() []interface{}
+
 	// Creates a sublogger that will always have the given key/value pairs
 	With(args ...interface{}) Logger
+
+	Name() string
 
 	// Create a logger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
@@ -195,9 +199,9 @@ type LoggerOptions struct {
 }
 
 type SinkAdapter interface {
-	Accept(...)
+	Accept(name string, level Level, msg string, args ...interface{})
 }
 
 type SinkAdapterCreator interface {
-	SinkAdapter SinkAdapter()
+	SinkAdapter() SinkAdapter
 }

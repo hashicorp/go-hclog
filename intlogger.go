@@ -48,14 +48,6 @@ var (
 // Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}
 
-type A interface {
-	Foo(interface{ Bar() })
-}
-
-type C interface {
-	Foo(interface{ Bar() })
-}
-
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
 type intLogger struct {
@@ -73,20 +65,20 @@ type intLogger struct {
 	implied []interface{}
 }
 
-func (i *intLogger) Accept() {
-
+func (i *intLogger) Accept(name string, level Level, msg string, args ...interface{}) {
+	i.Log(level, msg, args)
 }
 
 func (i *intLogger) SinkAdapter() SinkAdapter {
 	return i
 }
 
-type intSinkAdatpter struct {
-	*intLogger
-}
-
 func (i *intLogger) ImpliedArgs() []interface{} {
 	return i.implied
+}
+
+func (i *intLogger) Name() string {
+	return i.name
 }
 
 // New returns a configured logger.
