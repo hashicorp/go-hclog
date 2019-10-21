@@ -193,3 +193,11 @@ type LoggerOptions struct {
 	// are concretely instances of *os.File.
 	Color ColorOption
 }
+
+type SinkAdapter interface {
+	Accept(...)
+}
+
+type SinkAdapterCreator interface {
+	SinkAdapter SinkAdapter()
+}
