@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 )
 
+var _ Logger = &interceptLogger{}
+
 type interceptLogger struct {
 	Logger
 
