@@ -53,6 +53,21 @@ func Fmt(str string, args ...interface{}) Format {
 	return append(Format{str}, args...)
 }
 
+// ColorOption expresses how the output should be colored, if at all.
+type ColorOption uint8
+
+const (
+	// ColorOff is the default coloration, and does not
+	// inject color codes into the io.Writer.
+	ColorOff ColorOption = iota
+	// AutoColor checks if the io.Writer is a tty,
+	// and if so enables coloring.
+	AutoColor
+	// ForceColor will enable coloring, regardless of whether
+	// the io.Writer is a tty or not.
+	ForceColor
+)
+
 // LevelFromString returns a Level type for the named log level, or "NoLevel" if
 // the level string is invalid. This facilitates setting the log level via
 // config or environment variable by name in a predictable way.
@@ -173,4 +188,8 @@ type LoggerOptions struct {
 
 	// The time format to use instead of the default
 	TimeFormat string
+
+	// Color the output. On Windows, colored logs are only avaiable for io.Writers that
+	// are concretely instances of *os.File.
+	Color ColorOption
 }
