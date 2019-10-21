@@ -65,24 +65,18 @@ type intLogger struct {
 	implied []interface{}
 }
 
-func (i *intLogger) Accept(name string, level Level, msg string, args ...interface{}) {
-	i.Log(name, level, msg, args)
-}
-
-func (i *intLogger) SinkAdapter() SinkAdapter {
-	return i
-}
-
-func (i *intLogger) ImpliedArgs() []interface{} {
-	return i.implied
-}
-
-func (i *intLogger) Name() string {
-	return i.name
-}
-
 // New returns a configured logger.
 func New(opts *LoggerOptions) Logger {
+	return newLogger(opts)
+}
+
+// NewSinkAdapter returns a SinkAdapter with configured settings
+// defined by LoggerOptions
+func NewSinkAdapter(opts *LoggerOptions) SinkAdapter {
+	return newLogger(opts)
+}
+
+func newLogger(opts *LoggerOptions) *intLogger {
 	if opts == nil {
 		opts = &LoggerOptions{}
 	}
@@ -563,4 +557,19 @@ func (l *intLogger) checkWriterIsFile() *os.File {
 		panic("Cannot enable coloring of non-file Writers")
 	}
 	return fi
+}
+
+// Accept implements the SinkAdapter interface
+func (i *intLogger) Accept(name string, level Level, msg string, args ...interface{}) {
+	i.Log(name, level, msg, args...)
+}
+
+// ImpliedArgs returns the loggers implied args
+func (i *intLogger) ImpliedArgs() []interface{} {
+	return i.implied
+}
+
+// Name returns the loggers name
+func (i *intLogger) Name() string {
+	return i.name
 }

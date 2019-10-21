@@ -2,6 +2,7 @@ package hclog
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -18,11 +19,13 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		unsubscribe := intercept.SubscribeWith(&LoggerOptions{
+		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,
 			Output: &sbuf,
 		})
-		defer unsubscribe()
+
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
 
 		intercept.Debug("test log", "who", "programmer")
 
@@ -44,11 +47,12 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		unsubscribe := intercept.SubscribeWith(&LoggerOptions{
+		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,
 			Output: &sbuf,
 		})
-		defer unsubscribe()
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
 
 		derived := intercept.With("a", 1, "b", 2)
 		derived = derived.With("c", 3)
@@ -78,11 +82,12 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		unsubscribe := intercept.SubscribeWith(&LoggerOptions{
+		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,
 			Output: &sbuf,
 		})
-		defer unsubscribe()
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
 
 		httpLogger := intercept.Named("http")
 
@@ -111,11 +116,12 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		unsubscribe := intercept.SubscribeWith(&LoggerOptions{
+		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,
 			Output: &sbuf,
 		})
-		defer unsubscribe()
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
 
 		httpLogger := intercept.ResetNamed("http")
 
@@ -144,14 +150,51 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		unsubscribe := intercept.SubscribeWith(&LoggerOptions{
+		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,
 			Output: &sbuf,
 		})
-		unsubscribe()
+		intercept.RegisterSink(sink)
+		intercept.DeregisterSink(sink)
 
 		intercept.Info("test1")
 
 		assert.Equal(t, "", sbuf.String())
+	})
+
+	t.Run("Sinks accept different log formats", func(t *testing.T) {
+		var buf bytes.Buffer
+		var sbuf bytes.Buffer
+
+		intercept := NewInterceptLogger(&LoggerOptions{
+			Level:  Info,
+			Output: &buf,
+		})
+
+		sink := NewSinkAdapter(&LoggerOptions{
+			Level:      Debug,
+			Output:     &sbuf,
+			JSONFormat: true,
+		})
+
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
+
+		intercept.Info("this is a test", "who", "caller")
+		output := buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		rest := output[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  this is a test: who=caller\n", rest)
+
+		b := sbuf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is a test", raw["@message"])
+		assert.Equal(t, "caller", raw["who"])
 	})
 }

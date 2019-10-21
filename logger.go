@@ -199,10 +199,24 @@ type LoggerOptions struct {
 	Color ColorOption
 }
 
-type SinkAdapter interface {
-	Accept(name string, level Level, msg string, args ...interface{})
+// InterceptLogger describes the interface for using a logger
+// that can register different output sinks.
+// This is useful for sending lower level log messages
+// to a different output while keeping the root logger
+// at a higher one.
+type InterceptLogger interface {
+	// Logger is the root logger for an InterceptLogger
+	Logger
+
+	// RegisterSink adds a SinkAdapter to the InterceptLogger
+	RegisterSink(sink SinkAdapter)
+
+	// DeregisterSink removes a SinkAdapter from the InterceptLogger
+	DeregisterSink(sink SinkAdapter)
 }
 
-type SinkAdapterCreator interface {
-	SinkAdapter() SinkAdapter
+// SinkAdapter describes the interface that must be implemented
+// in order to Register a new sink to an InterceptLogger
+type SinkAdapter interface {
+	Accept(name string, level Level, msg string, args ...interface{})
 }

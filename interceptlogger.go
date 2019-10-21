@@ -5,11 +5,6 @@ import (
 	"sync/atomic"
 )
 
-type InterceptLogger interface {
-	Logger
-	SubscribeWith(opts *LoggerOptions) (unsubscribe func())
-}
-
 type interceptLogger struct {
 	Logger
 
@@ -30,19 +25,7 @@ func NewInterceptLogger(opts *LoggerOptions) InterceptLogger {
 	return intercept
 }
 
-func (i *interceptLogger) Debug(msg string, args ...interface{}) {
-	i.Logger.Debug(msg, args...)
-	if atomic.LoadInt32(i.sinkCount) == 0 {
-		return
-	}
-
-	i.Lock()
-	defer i.Unlock()
-	for s := range i.Sinks {
-		s.Accept(i.Name(), Debug, msg, i.retrieveImplied(args...)...)
-	}
-}
-
+// Emit the message and args at TRACE level to log and sinks
 func (i *interceptLogger) Trace(msg string, args ...interface{}) {
 	i.Logger.Trace(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
@@ -56,6 +39,21 @@ func (i *interceptLogger) Trace(msg string, args ...interface{}) {
 	}
 }
 
+// Emit the message and args at DEBUG level to log and sinks
+func (i *interceptLogger) Debug(msg string, args ...interface{}) {
+	i.Logger.Debug(msg, args...)
+	if atomic.LoadInt32(i.sinkCount) == 0 {
+		return
+	}
+
+	i.Lock()
+	defer i.Unlock()
+	for s := range i.Sinks {
+		s.Accept(i.Name(), Debug, msg, i.retrieveImplied(args...)...)
+	}
+}
+
+// Emit the message and args at INFO level to log and sinks
 func (i *interceptLogger) Info(msg string, args ...interface{}) {
 	i.Logger.Info(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
@@ -69,6 +67,7 @@ func (i *interceptLogger) Info(msg string, args ...interface{}) {
 	}
 }
 
+// Emit the message and args at WARN level to log and sinks
 func (i *interceptLogger) Warn(msg string, args ...interface{}) {
 	i.Logger.Warn(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
@@ -82,6 +81,7 @@ func (i *interceptLogger) Warn(msg string, args ...interface{}) {
 	}
 }
 
+// Emit the message and args at ERROR level to log and sinks
 func (i *interceptLogger) Error(msg string, args ...interface{}) {
 	i.Logger.Error(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
@@ -106,6 +106,9 @@ func (i *interceptLogger) retrieveImplied(args ...interface{}) []interface{} {
 	return cp
 }
 
+// Create a new sub-Logger that a name decending from the current name.
+// This is used to create a subsystem specific Logger.
+// Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) Named(name string) Logger {
 	var sub interceptLogger
 
@@ -116,6 +119,10 @@ func (i *interceptLogger) Named(name string) Logger {
 	return &sub
 }
 
+// Create a new sub-Logger with an explicit name. This ignores the current
+// name. This is used to create a standalone logger that doesn't fall
+// within the normal hierarchy. Registered sinks will subscribe
+// to these messages as well.
 func (i *interceptLogger) ResetNamed(name string) Logger {
 	var sub interceptLogger
 
@@ -126,6 +133,9 @@ func (i *interceptLogger) ResetNamed(name string) Logger {
 	return &sub
 }
 
+// Return a sub-Logger for which every emitted log message will contain
+// the given key/value pairs. This is used to create a context specific
+// Logger.
 func (i *interceptLogger) With(args ...interface{}) Logger {
 	var sub interceptLogger
 
@@ -136,24 +146,22 @@ func (i *interceptLogger) With(args ...interface{}) Logger {
 	return &sub
 }
 
-func (i *interceptLogger) SubscribeWith(opts *LoggerOptions) func() {
-	logger := New(opts)
-	sink := &sinkAdapter{logger.(*intLogger)}
+// RegisterSink attaches a SinkAdapter to interceptLoggers sinks.
+func (i *interceptLogger) RegisterSink(sink SinkAdapter) {
+	i.Lock()
+	defer i.Unlock()
 
 	i.Sinks[sink] = struct{}{}
 
 	atomic.AddInt32(i.sinkCount, 1)
-
-	return func() {
-		delete(i.Sinks, sink)
-		atomic.AddInt32(i.sinkCount, -1)
-	}
 }
 
-type sinkAdapter struct {
-	*intLogger
-}
+// DeregisterSink removes a SinkAdapter from interceptLoggers sinks.
+func (i *interceptLogger) DeregisterSink(sink SinkAdapter) {
+	i.Lock()
+	defer i.Unlock()
 
-func (s *sinkAdapter) Accept(name string, level Level, msg string, args ...interface{}) {
-	s.intLogger.Log(name, level, msg, args...)
+	delete(i.Sinks, sink)
+
+	atomic.AddInt32(i.sinkCount, -1)
 }
