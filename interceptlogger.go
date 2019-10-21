@@ -5,7 +5,12 @@ import (
 	"sync/atomic"
 )
 
-type InterceptLogger struct {
+type InterceptLogger interface {
+	Logger
+	SubscribeWith(opts *LoggerOptions) (unsubscribe func())
+}
+
+type interceptLogger struct {
 	Logger
 
 	sync.Mutex
@@ -13,9 +18,9 @@ type InterceptLogger struct {
 	Sinks     map[SinkAdapter]struct{}
 }
 
-func NewInterceptLogger(root Logger) *InterceptLogger {
-	intercept := &InterceptLogger{
-		Logger:    root,
+func NewInterceptLogger(opts *LoggerOptions) InterceptLogger {
+	intercept := &interceptLogger{
+		Logger:    New(opts),
 		sinkCount: new(int32),
 		Sinks:     make(map[SinkAdapter]struct{}),
 	}
@@ -25,7 +30,7 @@ func NewInterceptLogger(root Logger) *InterceptLogger {
 	return intercept
 }
 
-func (i *InterceptLogger) Debug(msg string, args ...interface{}) {
+func (i *interceptLogger) Debug(msg string, args ...interface{}) {
 	i.Logger.Debug(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -38,7 +43,7 @@ func (i *InterceptLogger) Debug(msg string, args ...interface{}) {
 	}
 }
 
-func (i *InterceptLogger) Trace(msg string, args ...interface{}) {
+func (i *interceptLogger) Trace(msg string, args ...interface{}) {
 	i.Logger.Trace(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -51,7 +56,7 @@ func (i *InterceptLogger) Trace(msg string, args ...interface{}) {
 	}
 }
 
-func (i *InterceptLogger) Info(msg string, args ...interface{}) {
+func (i *interceptLogger) Info(msg string, args ...interface{}) {
 	i.Logger.Info(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -64,7 +69,7 @@ func (i *InterceptLogger) Info(msg string, args ...interface{}) {
 	}
 }
 
-func (i *InterceptLogger) Warn(msg string, args ...interface{}) {
+func (i *interceptLogger) Warn(msg string, args ...interface{}) {
 	i.Logger.Warn(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -77,7 +82,7 @@ func (i *InterceptLogger) Warn(msg string, args ...interface{}) {
 	}
 }
 
-func (i *InterceptLogger) Error(msg string, args ...interface{}) {
+func (i *interceptLogger) Error(msg string, args ...interface{}) {
 	i.Logger.Error(msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -90,7 +95,7 @@ func (i *InterceptLogger) Error(msg string, args ...interface{}) {
 	}
 }
 
-func (i *InterceptLogger) retrieveImplied(args ...interface{}) []interface{} {
+func (i *interceptLogger) retrieveImplied(args ...interface{}) []interface{} {
 	top := i.Logger.ImpliedArgs()
 
 	cp := make([]interface{}, len(top)+len(args))
@@ -101,8 +106,28 @@ func (i *InterceptLogger) retrieveImplied(args ...interface{}) []interface{} {
 	return cp
 }
 
-func (i *InterceptLogger) With(args ...interface{}) Logger {
-	var sub InterceptLogger
+func (i *interceptLogger) Named(name string) Logger {
+	var sub interceptLogger
+
+	sub = *i
+
+	sub.Logger = i.Logger.Named(name)
+
+	return &sub
+}
+
+func (i *interceptLogger) ResetNamed(name string) Logger {
+	var sub interceptLogger
+
+	sub = *i
+
+	sub.Logger = i.Logger.ResetNamed(name)
+
+	return &sub
+}
+
+func (i *interceptLogger) With(args ...interface{}) Logger {
+	var sub interceptLogger
 
 	sub = *i
 
@@ -111,7 +136,7 @@ func (i *InterceptLogger) With(args ...interface{}) Logger {
 	return &sub
 }
 
-func (i *InterceptLogger) SubscribeWith(opts *LoggerOptions) func() {
+func (i *interceptLogger) SubscribeWith(opts *LoggerOptions) func() {
 	logger := New(opts)
 	sink := &sinkAdapter{logger.(*intLogger)}
 
@@ -130,6 +155,5 @@ type sinkAdapter struct {
 }
 
 func (s *sinkAdapter) Accept(name string, level Level, msg string, args ...interface{}) {
-	// TODO handle name
-	s.intLogger.Log(level, msg, args...)
+	s.intLogger.Log(name, level, msg, args...)
 }

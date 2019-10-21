@@ -131,6 +131,7 @@ type Logger interface {
 	// Creates a sublogger that will always have the given key/value pairs
 	With(args ...interface{}) Logger
 
+	// Returns the Name of the logger
 	Name() string
 
 	// Create a logger that will prepend the name string on the front of all messages.
