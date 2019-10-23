@@ -126,6 +126,7 @@ type Logger interface {
 	// Indicate if ERROR logs would be emitted. This and the other Is* guards
 	IsError() bool
 
+	// ImpliedArgs returns With key/value pairs
 	ImpliedArgs() []interface{}
 
 	// Creates a sublogger that will always have the given key/value pairs
