@@ -126,8 +126,14 @@ type Logger interface {
 	// Indicate if ERROR logs would be emitted. This and the other Is* guards
 	IsError() bool
 
+	// ImpliedArgs returns With key/value pairs
+	ImpliedArgs() []interface{}
+
 	// Creates a sublogger that will always have the given key/value pairs
 	With(args ...interface{}) Logger
+
+	// Returns the Name of the logger
+	Name() string
 
 	// Create a logger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
@@ -192,4 +198,37 @@ type LoggerOptions struct {
 	// Color the output. On Windows, colored logs are only avaiable for io.Writers that
 	// are concretely instances of *os.File.
 	Color ColorOption
+}
+
+// InterceptLogger describes the interface for using a logger
+// that can register different output sinks.
+// This is useful for sending lower level log messages
+// to a different output while keeping the root logger
+// at a higher one.
+type InterceptLogger interface {
+	// Logger is the root logger for an InterceptLogger
+	Logger
+
+	// RegisterSink adds a SinkAdapter to the InterceptLogger
+	RegisterSink(sink SinkAdapter)
+
+	// DeregisterSink removes a SinkAdapter from the InterceptLogger
+	DeregisterSink(sink SinkAdapter)
+
+	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// If the logger already has a name, the new value will be appended to the current
+	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// without losing context.
+	NamedIntercept(name string) InterceptLogger
+
+	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// This sets the name of the logger to the value directly, unlike Named which honor
+	// the current name as well.
+	ResetNamedIntercept(name string) InterceptLogger
+}
+
+// SinkAdapter describes the interface that must be implemented
+// in order to Register a new sink to an InterceptLogger
+type SinkAdapter interface {
+	Accept(name string, level Level, msg string, args ...interface{})
 }
