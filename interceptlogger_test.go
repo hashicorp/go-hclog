@@ -197,4 +197,33 @@ func TestInterceptLogger(t *testing.T) {
 		assert.Equal(t, "this is a test", raw["@message"])
 		assert.Equal(t, "caller", raw["who"])
 	})
+
+	t.Run("handles parent with arguments and log level args", func(t *testing.T) {
+		var buf bytes.Buffer
+		var sbuf bytes.Buffer
+
+		intercept := NewInterceptLogger(&LoggerOptions{
+			Name:   "with_test",
+			Level:  Debug,
+			Output: &buf,
+		})
+
+		sink := NewSinkAdapter(&LoggerOptions{
+			Level:  Debug,
+			Output: &sbuf,
+		})
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
+
+		named := intercept.Named("sub_logger")
+		named = named.With("parent", "logger")
+		subNamed := named.Named("http")
+
+		subNamed.Debug("test1", "path", "/some/test/path", "args", []string{"test", "test"})
+
+		output := buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		rest := output[dataIdx+1:]
+		assert.Equal(t, "[DEBUG] with_test.sub_logger.http: test1: parent=logger path=/some/test/path args=[test, test]\n", rest)
+	})
 }

@@ -51,7 +51,7 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=testing\n", rest)
 	})
 
-	t.Run("quotes values with spaces", func(t *testing.T) {
+	t.Run("drew testing formats log entries", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
@@ -59,13 +59,13 @@ func TestLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
+		logger.Info("this is test", "who", "programmer", "why", "testing")
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=testing\n", rest)
 	})
 
 	t.Run("renders slice values specially", func(t *testing.T) {

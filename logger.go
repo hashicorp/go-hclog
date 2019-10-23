@@ -213,6 +213,17 @@ type InterceptLogger interface {
 
 	// DeregisterSink removes a SinkAdapter from the InterceptLogger
 	DeregisterSink(sink SinkAdapter)
+
+	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// If the logger already has a name, the new value will be appended to the current
+	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// without losing context.
+	NamedIntercept(name string) InterceptLogger
+
+	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// This sets the name of the logger to the value directly, unlike Named which honor
+	// the current name as well.
+	ResetNamedIntercept(name string) InterceptLogger
 }
 
 // SinkAdapter describes the interface that must be implemented
