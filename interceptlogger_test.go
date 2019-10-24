@@ -226,4 +226,36 @@ func TestInterceptLogger(t *testing.T) {
 		rest := output[dataIdx+1:]
 		assert.Equal(t, "[DEBUG] with_test.sub_logger.http: test1: parent=logger path=/some/test/path args=[test, test]\n", rest)
 	})
+
+	t.Run("derived standard loggers send output to sinks", func(t *testing.T) {
+		var buf bytes.Buffer
+		var sbuf bytes.Buffer
+
+		intercept := NewInterceptLogger(&LoggerOptions{
+			Name:   "with_name",
+			Level:  Debug,
+			Output: &buf,
+		})
+
+		standard := intercept.StandardLoggerIntercept(&StandardLoggerOptions{InferLevels: true})
+
+		sink := NewSinkAdapter(&LoggerOptions{
+			Level:  Debug,
+			Output: &sbuf,
+		})
+		intercept.RegisterSink(sink)
+		defer intercept.DeregisterSink(sink)
+
+		standard.Println("[DEBUG] test log")
+
+		output := buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		rest := output[dataIdx+1:]
+		assert.Equal(t, "[DEBUG] with_name: test log\n", rest)
+
+		output = sbuf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		assert.Equal(t, "[DEBUG] with_name: test log\n", rest)
+	})
 }

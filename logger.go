@@ -225,6 +225,12 @@ type InterceptLogger interface {
 	// This sets the name of the logger to the value directly, unlike Named which honor
 	// the current name as well.
 	ResetNamedIntercept(name string) InterceptLogger
+
+	// Return a value that conforms to the stdlib log.Logger interface
+	StandardLoggerIntercept(opts *StandardLoggerOptions) *log.Logger
+
+	// Return a value that conforms to io.Writer, which can be passed into log.SetOutput()
+	StandardWriterIntercept(opts *StandardLoggerOptions) io.Writer
 }
 
 // SinkAdapter describes the interface that must be implemented
