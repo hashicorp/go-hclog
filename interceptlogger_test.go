@@ -258,4 +258,37 @@ func TestInterceptLogger(t *testing.T) {
 		rest = output[dataIdx+1:]
 		assert.Equal(t, "[DEBUG] with_name: test log\n", rest)
 	})
+
+	t.Run("includes the caller location", func(t *testing.T) {
+		var buf bytes.Buffer
+		var sbuf bytes.Buffer
+
+		logger := NewInterceptLogger(&LoggerOptions{
+			Name:            "test",
+			Output:          &buf,
+			IncludeLocation: true,
+		})
+
+		sink := NewSinkAdapter(&LoggerOptions{
+			IncludeLocation: true,
+			Level:           Debug,
+			Output:          &sbuf,
+		})
+		logger.RegisterSink(sink)
+		defer logger.DeregisterSink(sink)
+
+		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		// This test will break if you move this around, it's line dependent, just fyi
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+
+		str = sbuf.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+	})
 }

@@ -133,7 +133,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:146: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:129: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 
 	t.Run("prefixes the name", func(t *testing.T) {
