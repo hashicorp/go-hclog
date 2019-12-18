@@ -208,12 +208,6 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("unpaired with", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Fatal("expected panic")
-			}
-		}()
-
 		var buf bytes.Buffer
 
 		rootLogger := New(&LoggerOptions{
@@ -221,7 +215,11 @@ func TestLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		rootLogger = rootLogger.With("a")
+		derived1 := rootLogger.With("a")
+		derived1.Info("test1")
+		output := buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		assert.Equal(t, "[INFO]  with_test: test1: EXTRA_VALUE_AT_END=a\n", output[dataIdx+1:])
 	})
 
 	t.Run("use with and log", func(t *testing.T) {
