@@ -47,10 +47,6 @@ func (l *nullLogger) Named(name string) Logger { return l }
 
 func (l *nullLogger) ResetNamed(name string) Logger { return l }
 
-func (l *nullLogger) ResetOutput(opts *LoggerOptions) error { return nil }
-
-func (l *nullLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error { return nil }
-
 func (l *nullLogger) SetLevel(level Level) {}
 
 func (l *nullLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
