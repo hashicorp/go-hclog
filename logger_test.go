@@ -16,6 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type bufferingBuffer struct {
+	held    bytes.Buffer
+	flushed bytes.Buffer
+}
+
+func (b *bufferingBuffer) Write(p []byte) (int, error) {
+	return b.held.Write(p)
+}
+
+func (b *bufferingBuffer) String() string {
+	return b.flushed.String()
+}
+
+func (b *bufferingBuffer) Flush() error {
+	_, err := b.flushed.WriteString(b.held.String())
+	return err
+}
+
 func TestLogger(t *testing.T) {
 	t.Run("uses default output if none is given", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -316,6 +334,69 @@ func TestLogger(t *testing.T) {
 
 		assert.Equal(t, "[INFO]  test: this is test: production=\"12 beans/day\"\n", rest)
 	})
+
+	t.Run("supports resetting the output", func(t *testing.T) {
+		var first, second bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Output: &first,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		str := first.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		logger.ResetOutput(&LoggerOptions{
+			Output: &second,
+		})
+
+		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
+
+		str = first.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		str = second.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
+	})
+
+	t.Run("supports resetting the output with flushing", func(t *testing.T) {
+		var first bufferingBuffer
+		var second bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Output: &first,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		str := first.String()
+		assert.Empty(t, str)
+
+		logger.ResetOutputWithFlush(&LoggerOptions{
+			Output: &second,
+		}, &first)
+
+		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
+
+		str = first.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		str = second.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
+	})
+
 }
 
 func TestLogger_leveledWriter(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -559,6 +560,36 @@ func (l *intLogger) ResetNamed(name string) Logger {
 	sl.name = name
 
 	return &sl
+}
+
+func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	return l.resetOutput(opts)
+}
+
+func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	if flushable == nil {
+		return errors.New("flushable is nil")
+	}
+	if err := flushable.Flush(); err != nil {
+		return err
+	}
+
+	return l.resetOutput(opts)
+}
+
+func (l *intLogger) resetOutput(opts *LoggerOptions) error {
+	if opts.Output == nil {
+		return errors.New("given output is nil")
+	}
+
+	l.writer = newWriter(opts.Output, opts.Color)
+	l.setColorization(opts)
+	return nil
 }
 
 // Update the logging level on-the-fly. This will affect all subloggers as

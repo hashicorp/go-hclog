@@ -149,6 +149,15 @@ type Logger interface {
 	// the current name as well.
 	ResetNamed(name string) Logger
 
+	// ResetOutput swaps the current output writer with the one given in the
+	// opts. Color options given in opts will be used for the new output.
+	ResetOutput(opts *LoggerOptions) error
+
+	// ResetOutputWithFlush swaps the current output writer with the one given
+	// in the opts, first calling Flush on the given Flushable. Color options
+	// given in opts will be used for the new output.
+	ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error
+
 	// Updates the level. This should affect all sub-loggers as well. If an
 	// implementation cannot update the level on the fly, it should no-op.
 	SetLevel(level Level)
@@ -240,4 +249,11 @@ type InterceptLogger interface {
 // in order to Register a new sink to an InterceptLogger
 type SinkAdapter interface {
 	Accept(name string, level Level, msg string, args ...interface{})
+}
+
+// Flushable represents a method for flushing an output buffer. It can be used
+// if Resetting the log to use a new output, in order to flush the writes to
+// the existing output beforehand.
+type Flushable interface {
+	Flush() error
 }
