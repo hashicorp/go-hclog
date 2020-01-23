@@ -563,18 +563,27 @@ func (l *intLogger) ResetNamed(name string) Logger {
 }
 
 func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
+	if opts.Output == nil {
+		return errors.New("given output is nil")
+	}
+
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+
 	return l.resetOutput(opts)
 }
 
 func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
+	if opts.Output == nil {
+		return errors.New("given output is nil")
+	}
 	if flushable == nil {
 		return errors.New("flushable is nil")
 	}
+
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
 	if err := flushable.Flush(); err != nil {
 		return err
 	}
@@ -583,10 +592,6 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 }
 
 func (l *intLogger) resetOutput(opts *LoggerOptions) error {
-	if opts.Output == nil {
-		return errors.New("given output is nil")
-	}
-
 	l.writer = newWriter(opts.Output, opts.Color)
 	l.setColorization(opts)
 	return nil
