@@ -8,9 +8,6 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/analysis/singlechecker"
-
-	// Ensure this ends up in our go.mod for use by the testdata fixtures.
-	_ "github.com/hashicorp/go-hclog"
 )
 
 func main() {
