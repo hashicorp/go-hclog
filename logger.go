@@ -102,8 +102,10 @@ func (l Level) String() string {
 		return "warn"
 	case Error:
 		return "error"
+	case NoLevel:
+		return "none"
 	default:
-		return "default"
+		return "unknown"
 	}
 }
 
