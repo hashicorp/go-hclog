@@ -284,11 +284,73 @@ func TestInterceptLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger.go:76: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 
 		str = sbuf.String()
 		dataIdx = strings.IndexByte(str, ' ')
 		rest = str[dataIdx+1:]
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger.go:84: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+	})
+
+	t.Run("supports resetting the output", func(t *testing.T) {
+		var first, second bytes.Buffer
+
+		logger := NewInterceptLogger(&LoggerOptions{
+			Output: &first,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		str := first.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		logger.(OutputResettable).ResetOutput(&LoggerOptions{
+			Output: &second,
+		})
+
+		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
+
+		str = first.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		str = second.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
+	})
+
+	t.Run("supports resetting the output with flushing", func(t *testing.T) {
+		var first bufferingBuffer
+		var second bytes.Buffer
+
+		logger := NewInterceptLogger(&LoggerOptions{
+			Output: &first,
+		})
+
+		logger.Info("this is test", "production", Fmt("%d beans/day", 12))
+
+		str := first.String()
+		assert.Empty(t, str)
+
+		logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
+			Output: &second,
+		}, &first)
+
+		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
+
+		str = first.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
+
+		str = second.String()
+		dataIdx = strings.IndexByte(str, ' ')
+		rest = str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
 	})
 }
