@@ -61,7 +61,7 @@ type intLogger struct {
 
 	// This is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
-	mutex  *sync.Mutex
+	locker Locker
 	writer *writer
 	level  *int32
 
@@ -94,22 +94,23 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level = DefaultLevel
 	}
 
-	mutex := opts.Mutex
-	callerResponsibleForLocking := opts.CallerResponsibleForLocking
-	if mutex == nil {
-		mutex = new(sync.Mutex)
-		callerResponsibleForLocking = false
+	locker := opts.Locker
+	if locker == nil {
+		mutex := opts.Mutex
+		if mutex == nil {
+			mutex = new(sync.Mutex)
+		}
+		locker = DefaultLocker{Mutex: mutex}
 	}
 
 	l := &intLogger{
-		json:                        opts.JSONFormat,
-		caller:                      opts.IncludeLocation,
-		callerResponsibleForLocking: callerResponsibleForLocking,
-		name:                        opts.Name,
-		timeFormat:                  TimeFormat,
-		mutex:                       mutex,
-		writer:                      newWriter(output, opts.Color),
-		level:                       new(int32),
+		json:       opts.JSONFormat,
+		caller:     opts.IncludeLocation,
+		name:       opts.Name,
+		timeFormat: TimeFormat,
+		locker:     locker,
+		writer:     newWriter(output, opts.Color),
+		level:      new(int32),
 	}
 
 	l.setColorization(opts)
@@ -132,10 +133,8 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 
 	t := time.Now()
 
-	if !l.callerResponsibleForLocking {
-		l.mutex.Lock()
-		defer l.mutex.Unlock()
-	}
+	l.locker.Lock()
+	defer l.locker.Unlock()
 
 	if l.json {
 		l.logJSON(t, name, level, msg, args...)
@@ -573,10 +572,8 @@ func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
 		return errors.New("given output is nil")
 	}
 
-	if !l.callerResponsibleForLocking {
-		l.mutex.Lock()
-		defer l.mutex.Unlock()
-	}
+	l.locker.Lock()
+	defer l.locker.Unlock()
 
 	return l.resetOutput(opts)
 }
@@ -589,10 +586,8 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 		return errors.New("flushable is nil")
 	}
 
-	if !l.callerResponsibleForLocking {
-		l.mutex.Lock()
-		defer l.mutex.Unlock()
-	}
+	l.locker.Lock()
+	defer l.locker.Unlock()
 
 	if err := flushable.Flush(); err != nil {
 		return err

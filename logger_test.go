@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -396,18 +395,6 @@ func TestLogger(t *testing.T) {
 		dataIdx = strings.IndexByte(str, ' ')
 		rest = str[dataIdx+1:]
 		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
-	})
-
-	t.Run("does not deadlock if caller responsible for locking", func(t *testing.T) {
-		mutex := new(sync.Mutex)
-		logger := New(&LoggerOptions{
-			Mutex:                       mutex,
-			CallerResponsibleForLocking: true,
-		})
-
-		mutex.Lock()
-		logger.Info("this is a test")
-		mutex.Unlock()
 	})
 }
 

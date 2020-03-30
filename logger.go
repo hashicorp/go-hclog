@@ -205,14 +205,14 @@ type LoggerOptions struct {
 	// Where to write the logs to. Defaults to os.Stderr if nil
 	Output io.Writer
 
-	// An optional mutex pointer in case Output is shared
+	// An optional mutex pointer in case Output is shared. Deprecated; use
+	// Locker with a DefaultLocker and set this as the mutex. If both are set
+	// the Locker will be preferred.
 	Mutex *sync.Mutex
 
-	// If true, the caller will be responsible for locking and unlocking the
-	// mutex. This can be used in situations where a caller wants to write
-	// multiple related log entries, guaranteeing that they are grouped
-	// together.
-	CallerResponsibleForLocking bool
+	// If set uses the given Locker; otherwise a DefaultLocker will be
+	// instantiated and used internally.
+	Locker Locker
 
 	// Control if the output should be in JSON.
 	JSONFormat bool
@@ -285,3 +285,32 @@ type OutputResettable interface {
 	// given in opts will be used for the new output.
 	ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error
 }
+
+// Locker is used for locking output. If not set when creating a logger, a
+// DefaultLocker will be used which uses a sync.Mutex internally.
+type Locker interface {
+	// Lock is called when the output is going to be changed or written to
+	Lock()
+
+	// Unlock is called when the operation that called Lock() completes
+	Unlock()
+}
+
+// DefaultLocker implements Locker using a standard sync.Mutex
+type DefaultLocker struct {
+	*sync.Mutex
+}
+
+// NoopLocker implements locker but does nothing. This is useful if the client
+// wants tight control over locking, in order to provide grouping of log
+// entries or other functionality.
+type NoopLocker struct{}
+
+// Lock does nothing
+func (n NoopLocker) Lock() {}
+
+// Unlock does nothing
+func (n NoopLocker) Unlock() {}
+
+var _ Locker = (*DefaultLocker)(nil)
+var _ Locker = (*NoopLocker)(nil)
