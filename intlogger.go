@@ -53,11 +53,10 @@ var _ Logger = &intLogger{}
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
 type intLogger struct {
-	json                        bool
-	caller                      bool
-	name                        string
-	timeFormat                  string
-	callerResponsibleForLocking bool
+	json       bool
+	caller     bool
+	name       string
+	timeFormat string
 
 	// This is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
