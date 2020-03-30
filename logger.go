@@ -208,6 +208,12 @@ type LoggerOptions struct {
 	// An optional mutex pointer in case Output is shared
 	Mutex *sync.Mutex
 
+	// If true, the caller will be responsible for locking and unlocking the
+	// mutex. This can be used in situations where a caller wants to write
+	// multiple related log entries, guaranteeing that they are grouped
+	// together.
+	CallerResponsibleForLocking bool
+
 	// Control if the output should be in JSON.
 	JSONFormat bool
 

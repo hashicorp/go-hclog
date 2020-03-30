@@ -53,10 +53,11 @@ var _ Logger = &intLogger{}
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
 type intLogger struct {
-	json       bool
-	caller     bool
-	name       string
-	timeFormat string
+	json                        bool
+	caller                      bool
+	name                        string
+	timeFormat                  string
+	callerResponsibleForLocking bool
 
 	// This is a pointer so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
@@ -94,18 +95,21 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	}
 
 	mutex := opts.Mutex
+	callerResponsibleForLocking := opts.CallerResponsibleForLocking
 	if mutex == nil {
 		mutex = new(sync.Mutex)
+		callerResponsibleForLocking = false
 	}
 
 	l := &intLogger{
-		json:       opts.JSONFormat,
-		caller:     opts.IncludeLocation,
-		name:       opts.Name,
-		timeFormat: TimeFormat,
-		mutex:      mutex,
-		writer:     newWriter(output, opts.Color),
-		level:      new(int32),
+		json:                        opts.JSONFormat,
+		caller:                      opts.IncludeLocation,
+		callerResponsibleForLocking: callerResponsibleForLocking,
+		name:                        opts.Name,
+		timeFormat:                  TimeFormat,
+		mutex:                       mutex,
+		writer:                      newWriter(output, opts.Color),
+		level:                       new(int32),
 	}
 
 	l.setColorization(opts)
@@ -128,8 +132,10 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 
 	t := time.Now()
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	if !l.callerResponsibleForLocking {
+		l.mutex.Lock()
+		defer l.mutex.Unlock()
+	}
 
 	if l.json {
 		l.logJSON(t, name, level, msg, args...)
@@ -567,8 +573,10 @@ func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
 		return errors.New("given output is nil")
 	}
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	if !l.callerResponsibleForLocking {
+		l.mutex.Lock()
+		defer l.mutex.Unlock()
+	}
 
 	return l.resetOutput(opts)
 }
@@ -581,8 +589,10 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 		return errors.New("flushable is nil")
 	}
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	if !l.callerResponsibleForLocking {
+		l.mutex.Lock()
+		defer l.mutex.Unlock()
+	}
 
 	if err := flushable.Flush(); err != nil {
 		return err
