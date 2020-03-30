@@ -206,8 +206,8 @@ type LoggerOptions struct {
 	Output io.Writer
 
 	// An optional mutex pointer in case Output is shared. Deprecated; use
-	// Locker with a DefaultLocker and set this as the mutex. If both are set
-	// the Locker will be preferred.
+	// Locker with a DefaultLocker and set your preferred mutex there. If both
+	// this and Locker are set, Locker will be preferred.
 	Mutex *sync.Mutex
 
 	// If set uses the given Locker; otherwise a DefaultLocker will be
