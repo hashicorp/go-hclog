@@ -282,7 +282,7 @@ type OutputResettable interface {
 }
 
 // Locker is used for locking output. If not set when creating a logger, a
-// DefaultLocker will be used which uses a sync.Mutex internally.
+// sync.Mutex will be used internally.
 type Locker interface {
 	// Lock is called when the output is going to be changed or written to
 	Lock()

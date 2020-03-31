@@ -58,9 +58,9 @@ type intLogger struct {
 	name       string
 	timeFormat string
 
-	// This is a pointer so that it's shared by any derived loggers, since
+	// This is an interface so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
-	locker Locker
+	mutex  Locker
 	writer *writer
 	level  *int32
 
@@ -93,9 +93,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level = DefaultLevel
 	}
 
-	locker := opts.Mutex
-	if locker == nil {
-		locker = new(sync.Mutex)
+	mutex := opts.Mutex
+	if mutex == nil {
+		mutex = new(sync.Mutex)
 	}
 
 	l := &intLogger{
@@ -103,7 +103,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		caller:     opts.IncludeLocation,
 		name:       opts.Name,
 		timeFormat: TimeFormat,
-		locker:     locker,
+		mutex:      mutex,
 		writer:     newWriter(output, opts.Color),
 		level:      new(int32),
 	}
@@ -128,8 +128,8 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 
 	t := time.Now()
 
-	l.locker.Lock()
-	defer l.locker.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 
 	if l.json {
 		l.logJSON(t, name, level, msg, args...)
@@ -567,8 +567,8 @@ func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
 		return errors.New("given output is nil")
 	}
 
-	l.locker.Lock()
-	defer l.locker.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 
 	return l.resetOutput(opts)
 }
@@ -581,8 +581,8 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 		return errors.New("flushable is nil")
 	}
 
-	l.locker.Lock()
-	defer l.locker.Unlock()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 
 	if err := flushable.Flush(); err != nil {
 		return err
