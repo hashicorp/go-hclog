@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 )
 
 var (
@@ -205,14 +204,10 @@ type LoggerOptions struct {
 	// Where to write the logs to. Defaults to os.Stderr if nil
 	Output io.Writer
 
-	// An optional mutex pointer in case Output is shared. Deprecated; use
-	// Locker with a DefaultLocker and set your preferred mutex there. If both
-	// this and Locker are set, Locker will be preferred.
-	Mutex *sync.Mutex
-
-	// If set uses the given Locker; otherwise a DefaultLocker will be
-	// instantiated and used internally.
-	Locker Locker
+	// An optional Locker in case Output is shared. This can be a sync.Mutex or
+	// a NoopLocker if the caller wants control over output, e.g. for batching
+	// log lines.
+	Mutex Locker
 
 	// Control if the output should be in JSON.
 	JSONFormat bool
@@ -296,11 +291,6 @@ type Locker interface {
 	Unlock()
 }
 
-// DefaultLocker implements Locker using a standard sync.Mutex
-type DefaultLocker struct {
-	*sync.Mutex
-}
-
 // NoopLocker implements locker but does nothing. This is useful if the client
 // wants tight control over locking, in order to provide grouping of log
 // entries or other functionality.
@@ -312,5 +302,4 @@ func (n NoopLocker) Lock() {}
 // Unlock does nothing
 func (n NoopLocker) Unlock() {}
 
-var _ Locker = (*DefaultLocker)(nil)
 var _ Locker = (*NoopLocker)(nil)

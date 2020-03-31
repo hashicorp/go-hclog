@@ -93,13 +93,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level = DefaultLevel
 	}
 
-	locker := opts.Locker
+	locker := opts.Mutex
 	if locker == nil {
-		mutex := opts.Mutex
-		if mutex == nil {
-			mutex = new(sync.Mutex)
-		}
-		locker = DefaultLocker{Mutex: mutex}
+		locker = new(sync.Mutex)
 	}
 
 	l := &intLogger{
