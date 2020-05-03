@@ -223,9 +223,10 @@ type LoggerOptions struct {
 	Color ColorOption
 
 	// A filter which is called with the log information and returns true if the value
-	// should actually be logged. This is useful when interacting with a system that
-	// you wish to suppress the log message for (because it's too noisy, etc)
-	FilterOut func(level Level, msg string, args ...interface{}) bool
+	// should not be logged (meaning return true it ignore the log entry).
+	// This is useful when interacting with a system that you wish to suppress the log
+	// message for (because it's too noisy, etc)
+	Filter func(level Level, msg string, args ...interface{}) bool
 }
 
 // InterceptLogger describes the interface for using a logger

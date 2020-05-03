@@ -66,7 +66,7 @@ type intLogger struct {
 
 	implied []interface{}
 
-	filterOut func(level Level, msg string, args ...interface{}) bool
+	filter func(level Level, msg string, args ...interface{}) bool
 }
 
 // New returns a configured logger.
@@ -108,7 +108,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		mutex:      mutex,
 		writer:     newWriter(output, opts.Color),
 		level:      new(int32),
-		filterOut:  opts.FilterOut,
+		filter:     opts.Filter,
 	}
 
 	l.setColorization(opts)
@@ -134,7 +134,7 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	if l.filterOut != nil && l.filterOut(level, msg, args...) {
+	if l.filter != nil && l.filter(level, msg, args...) {
 		return
 	}
 
