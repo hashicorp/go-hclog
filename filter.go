@@ -40,7 +40,7 @@ func (p PrefixFilter) FilterOut(level Level, msg string, args ...interface{}) bo
 	return strings.HasPrefix(msg, string(p))
 }
 
-// FilterFuncs is a slice of functions that will called to see if a log entry
+// FilterFuncs is a slice of functions that will be called to see if a log entry
 // should be filtered or not. It stops calling functions once at least one returns
 // true.
 type FilterFuncs []func(level Level, msg string, args ...interface{}) bool
