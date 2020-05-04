@@ -1,7 +1,7 @@
 package hclog
 
 // MessageFilter provides a simple way to build a list of log messages that
-// can be queried and matched. This is meant to be used with the MessageFilter
+// can be queried and matched. This is meant to be used with the Filter
 // option on Options to suppress log messages.
 type MessageFilter struct {
 	messages map[string]struct{}
