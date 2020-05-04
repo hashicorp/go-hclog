@@ -35,7 +35,7 @@ func (f *MessageFilter) FilterOut(level Level, msg string, args ...interface{}) 
 // PrefixFilter is a simple type to match a message string that has a common prefix.
 type PrefixFilter string
 
-// Matches an message that starts with the prefix.
+// Matches a message that starts with the prefix.
 func (p PrefixFilter) FilterOut(level Level, msg string, args ...interface{}) bool {
 	return strings.HasPrefix(msg, string(p))
 }
