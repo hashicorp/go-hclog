@@ -222,11 +222,11 @@ type LoggerOptions struct {
 	// are concretely instances of *os.File.
 	Color ColorOption
 
-	// A filter is a function which is called with the log information. If it returns true the value
+	// A function which is called with the log information and if it returns true the value
 	// should not be logged.
 	// This is useful when interacting with a system that you wish to suppress the log
 	// message for (because it's too noisy, etc)
-	Filter func(level Level, msg string, args ...interface{}) bool
+	Exclude func(level Level, msg string, args ...interface{}) bool
 }
 
 // InterceptLogger describes the interface for using a logger
