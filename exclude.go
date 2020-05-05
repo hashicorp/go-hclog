@@ -9,17 +9,17 @@ import (
 // can be queried and matched. This is meant to be used with the Exclude
 // option on Options to suppress log messages. This does not hold any mutexs
 // within itself, so normal usage would be to Add entries at setup and none after
-// Filter is going to be called. Filter is called with a mutex held within
+// Exclude is going to be called. Exclude is called with a mutex held within
 // the Logger, so that doesn't need to use a mutex. Example usage:
 //
 //	f := new(ExcludeByMessage)
 //	f.Add("Noisy log message text")
-//	appLogger.Filter = f.Filter
+//	appLogger.Exclude = f.Exclude
 type ExcludeByMessage struct {
 	messages map[string]struct{}
 }
 
-// Add a message to be filtered. Do not call this after Filter is to be called
+// Add a message to be filtered. Do not call this after Exclude is to be called
 // due to concurrency issues.
 func (f *ExcludeByMessage) Add(msg string) {
 	if f.messages == nil {
