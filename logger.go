@@ -52,6 +52,18 @@ func Fmt(str string, args ...interface{}) Format {
 	return append(Format{str}, args...)
 }
 
+// A simple shortcut to format numbers in hex when displayed with the normal
+// text output. For example: L.Info("header value", Hex(17))
+type Hex int
+
+// A simple shortcut to format numbers in octal when displayed with the normal
+// text output. For example: L.Info("perms", Octal(17))
+type Octal int
+
+// A simple shortcut to format numbers in binary when displayed with the normal
+// text output. For example: L.Info("bits", Binary(17))
+type Binary int
+
 // ColorOption expresses how the output should be colored, if at all.
 type ColorOption uint8
 
