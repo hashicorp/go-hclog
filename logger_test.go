@@ -335,6 +335,23 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: this is test: production=\"12 beans/day\"\n", rest)
 	})
 
+	t.Run("supports number formating", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  test: this is test: bytes=0xc perms=0755 bits=0b101\n", rest)
+	})
+
 	t.Run("supports resetting the output", func(t *testing.T) {
 		var first, second bytes.Buffer
 
@@ -615,6 +632,30 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, "12 beans/day", raw["production"])
+	})
+
+	t.Run("ignores number formatting requests", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+		})
+
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, float64(12), raw["bytes"])
+		assert.Equal(t, float64(0755), raw["perms"])
+		assert.Equal(t, float64(5), raw["bits"])
 	})
 
 	t.Run("includes the caller location", func(t *testing.T) {

@@ -267,6 +267,12 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				val = strconv.FormatUint(uint64(st), 10)
 			case uint8:
 				val = strconv.FormatUint(uint64(st), 10)
+			case Hex:
+				val = "0x" + strconv.FormatUint(uint64(st), 16)
+			case Octal:
+				val = "0" + strconv.FormatUint(uint64(st), 8)
+			case Binary:
+				val = "0b" + strconv.FormatUint(uint64(st), 2)
 			case CapturedStacktrace:
 				stacktrace = st
 				continue FOR
