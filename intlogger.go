@@ -113,7 +113,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 
 	l.setColorization(opts)
 
-	if opts.TimeFormat != "" {
+	if opts.DisableTime {
+		l.timeFormat = ""
+	} else if opts.TimeFormat != "" {
 		l.timeFormat = opts.TimeFormat
 	}
 
@@ -180,8 +182,10 @@ var logImplFile = regexp.MustCompile(`github.com/hashicorp/go-hclog/.+logger.go$
 
 // Non-JSON logging format function
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
-	l.writer.WriteString(t.Format(l.timeFormat))
-	l.writer.WriteByte(' ')
+	if len(l.timeFormat) > 0 {
+		l.writer.WriteString(t.Format(l.timeFormat))
+		l.writer.WriteByte(' ')
+	}
 
 	s, ok := _levelToBracket[level]
 	if ok {

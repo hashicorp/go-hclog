@@ -2,6 +2,8 @@ package hclog
 
 import (
 	"bytes"
+	"log"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -151,4 +153,20 @@ func TestStdlogAdapter_ForceLevel(t *testing.T) {
 			assert.Equal(t, c.expect, errRest)
 		})
 	}
+}
+
+func TestFromLogger(t *testing.T) {
+	var buf bytes.Buffer
+
+	sl := log.New(&buf, "test-stdlib-log ", log.Ltime)
+
+	hl := FromStandardLogger(sl, &LoggerOptions{
+		Name: "hclog-inner",
+	})
+
+	hl.Info("this is a test", "name", "tester", "count", 1)
+
+	re := regexp.MustCompile(`test-stdlib-log [\d:]+ \[INFO\]  hclog-inner: this is a test: name=tester count=1`)
+
+	assert.True(t, re.Match(buf.Bytes()))
 }
