@@ -230,6 +230,10 @@ type LoggerOptions struct {
 	// The time format to use instead of the default
 	TimeFormat string
 
+	// Control whether or not to display the time at all. This is required
+	// because setting TimeFormat to empty assumes the default format.
+	DisableTime bool
+
 	// Color the output. On Windows, colored logs are only avaiable for io.Writers that
 	// are concretely instances of *os.File.
 	Color ColorOption
