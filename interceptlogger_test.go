@@ -284,12 +284,12 @@ func TestInterceptLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger.go:76: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 
 		str = sbuf.String()
 		dataIdx = strings.IndexByte(str, ' ')
 		rest = str[dataIdx+1:]
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger.go:84: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 
 	t.Run("supports resetting the output", func(t *testing.T) {
