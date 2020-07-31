@@ -1,4 +1,4 @@
-name: test
+name: go-hclog
 
 on: [push]
 
