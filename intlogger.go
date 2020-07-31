@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -178,8 +177,6 @@ func trimCallerPath(path string) string {
 	return path[idx+1:]
 }
 
-var logImplFile = regexp.MustCompile(`.+intlogger.go|.+interceptlogger.go$`)
-
 // Non-JSON logging format function
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
 	if len(l.timeFormat) > 0 {
@@ -199,8 +196,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 		// Check if the caller is inside our package and inside
 		// a logger implementation file
 		if _, file, _, ok := runtime.Caller(3); ok {
-			match := logImplFile.MatchString(file)
-			if match {
+			if strings.HasSuffix(file, "intlogger.go") || strings.HasSuffix(file, "interceptlogger.go") {
 				offset = 4
 			}
 		}
