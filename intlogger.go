@@ -311,6 +311,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 
 	if stacktrace != "" {
 		l.writer.WriteString(string(stacktrace))
+		l.writer.WriteString("\n")
 	}
 }
 
