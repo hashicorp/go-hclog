@@ -416,8 +416,11 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 
 func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg string) map[string]interface{} {
 	vals := map[string]interface{}{
-		"@message":   msg,
-		"@timestamp": t.Format("2006-01-02T15:04:05.000000Z07:00"),
+		"@message": msg,
+	}
+	if len(l.timeFormat) > 0 {
+		// FIXME this doesn't respect LoggerOptions.TimeFormat
+		vals["@timestamp"] = t.Format("2006-01-02T15:04:05.000000Z07:00")
 	}
 
 	var levelStr string
