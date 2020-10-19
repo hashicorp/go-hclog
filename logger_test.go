@@ -762,3 +762,16 @@ func BenchmarkLogger(b *testing.B) {
 		}
 	})
 }
+
+func TestLogger_WithColor(t *testing.T) {
+	buf := new(bytes.Buffer)
+	logger := New(&LoggerOptions{
+		Output:     buf,
+		Color:      ForceColor,
+		TimeFormat: "none",
+	})
+
+	logger.Warn("this message", "key", "value")
+	expected := "\x1b[38;5;226mnone [WARN]  this message: key=value\n\x1b[0m"
+	require.Equal(t, expected, buf.String())
+}

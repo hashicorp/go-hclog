@@ -2,6 +2,7 @@ package hclog
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 )
 
@@ -18,20 +19,33 @@ func newWriter(out io.Writer, color ColorOption) *writer {
 }
 
 func (w *writer) Flush(level Level) (err error) {
-	var unwritten = w.b.Bytes()
+	msg := w.b.Bytes()
 
 	if w.color != ColorOff {
-		color := _levelToColor[level]
-		unwritten = []byte(color.Sprintf("%s", unwritten))
+		msg = _levelToColor[level](msg)
 	}
 
 	if lw, ok := w.w.(LevelWriter); ok {
-		_, err = lw.LevelWrite(level, unwritten)
+		_, err = lw.LevelWrite(level, msg)
 	} else {
-		_, err = w.w.Write(unwritten)
+		_, err = w.w.Write(msg)
 	}
 	w.b.Reset()
 	return err
+}
+
+var _levelToColor = map[Level]func([]byte) []byte{
+	Debug: newColor(252), // light grey
+	Trace: newColor(82),  // bright green
+	Info:  newColor(27),  // blue
+	Warn:  newColor(226), // yellow
+	Error: newColor(196), // red
+}
+
+func newColor(code uint) func([]byte) []byte {
+	return func(src []byte) []byte {
+		return []byte(fmt.Sprintf("\x1b[38;5;%dm%s\x1B[0m", code, src))
+	}
 }
 
 func (w *writer) Write(p []byte) (int, error) {
