@@ -210,18 +210,23 @@ func (i *interceptLogger) DeregisterSink(sink SinkAdapter) {
 	atomic.AddInt32(i.sinkCount, -1)
 }
 
-// Create a *log.Logger that will send it's data through this Logger. This
-// allows packages that expect to be using the standard library to log to
-// actually use this logger, which will also send to any registered sinks.
 func (i *interceptLogger) StandardLoggerIntercept(opts *StandardLoggerOptions) *log.Logger {
+	return i.StandardLogger(opts)
+}
+
+func (i *interceptLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 	if opts == nil {
 		opts = &StandardLoggerOptions{}
 	}
 
-	return log.New(i.StandardWriterIntercept(opts), "", 0)
+	return log.New(i.StandardWriter(opts), "", 0)
 }
 
 func (i *interceptLogger) StandardWriterIntercept(opts *StandardLoggerOptions) io.Writer {
+	return i.StandardWriter(opts)
+}
+
+func (i *interceptLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 	return &stdlogAdapter{
 		log:         i,
 		inferLevels: opts.InferLevels,

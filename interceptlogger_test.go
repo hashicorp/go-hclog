@@ -237,7 +237,7 @@ func TestInterceptLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		standard := intercept.StandardLoggerIntercept(&StandardLoggerOptions{InferLevels: true})
+		standard := intercept.StandardLogger(&StandardLoggerOptions{InferLevels: true})
 
 		sink := NewSinkAdapter(&LoggerOptions{
 			Level:  Debug,

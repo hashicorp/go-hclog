@@ -271,10 +271,10 @@ type InterceptLogger interface {
 	// the current name as well.
 	ResetNamedIntercept(name string) InterceptLogger
 
-	// Return a value that conforms to the stdlib log.Logger interface
+	// Deprecated: use StandardLogger
 	StandardLoggerIntercept(opts *StandardLoggerOptions) *log.Logger
 
-	// Return a value that conforms to io.Writer, which can be passed into log.SetOutput()
+	// Deprecated: use StandardWriter
 	StandardWriterIntercept(opts *StandardLoggerOptions) io.Writer
 }
 
