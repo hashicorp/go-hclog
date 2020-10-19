@@ -245,6 +245,23 @@ type LoggerOptions struct {
 	Exclude func(level Level, msg string, args ...interface{}) bool
 }
 
+func (o LoggerOptions) timeFormat() string {
+	if o.DisableTime {
+		return ""
+	}
+	if f := o.TimeFormat; f != "" {
+		return f
+	}
+	return TimeFormat
+}
+
+func (o LoggerOptions) callerOffset() int {
+	if o.IncludeLocation {
+		return 3 // TODO: use const
+	}
+	return 0
+}
+
 // InterceptLogger describes the interface for using a logger
 // that can register different output sinks.
 // This is useful for sending lower level log messages
