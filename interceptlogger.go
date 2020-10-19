@@ -127,13 +127,7 @@ func (i *interceptLogger) retrieveImplied(args ...interface{}) []interface{} {
 // This is used to create a subsystem specific Logger.
 // Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) Named(name string) Logger {
-	var sub interceptLogger
-
-	sub = *i
-
-	sub.Logger = i.Logger.Named(name)
-
-	return &sub
+	return i.NamedIntercept(name)
 }
 
 // Create a new sub-Logger with an explicit name. This ignores the current
@@ -141,13 +135,7 @@ func (i *interceptLogger) Named(name string) Logger {
 // within the normal hierarchy. Registered sinks will subscribe
 // to these messages as well.
 func (i *interceptLogger) ResetNamed(name string) Logger {
-	var sub interceptLogger
-
-	sub = *i
-
-	sub.Logger = i.Logger.ResetNamed(name)
-
-	return &sub
+	return i.ResetNamedIntercept(name)
 }
 
 // Create a new sub-Logger that a name decending from the current name.
@@ -157,9 +145,7 @@ func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
 	var sub interceptLogger
 
 	sub = *i
-
 	sub.Logger = i.Logger.Named(name)
-
 	return &sub
 }
 
@@ -171,9 +157,7 @@ func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
 	var sub interceptLogger
 
 	sub = *i
-
 	sub.Logger = i.Logger.ResetNamed(name)
-
 	return &sub
 }
 
