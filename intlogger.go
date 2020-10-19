@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -109,8 +108,6 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level:      new(int32),
 		exclude:    opts.Exclude,
 	}
-
-	l.setColorization(opts)
 
 	if opts.DisableTime {
 		l.timeFormat = ""
@@ -607,7 +604,6 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 
 func (l *intLogger) resetOutput(opts *LoggerOptions) error {
 	l.writer = newWriter(opts.Output, opts.Color)
-	l.setColorization(opts)
 	return nil
 }
 
@@ -634,16 +630,6 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		inferLevels: opts.InferLevels,
 		forceLevel:  opts.ForceLevel,
 	}
-}
-
-// checks if the underlying io.Writer is a file, and
-// panics if not. For use by colorization.
-func (l *intLogger) checkWriterIsFile() *os.File {
-	fi, ok := l.writer.w.(*os.File)
-	if !ok {
-		panic("Cannot enable coloring of non-file Writers")
-	}
-	return fi
 }
 
 // Accept implements the SinkAdapter interface

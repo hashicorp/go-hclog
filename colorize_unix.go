@@ -3,25 +3,20 @@
 package hclog
 
 import (
+	"os"
+
 	"github.com/mattn/go-isatty"
 )
 
-// setColorization will mutate the values of this logger
-// to approperately configure colorization options. It provides
-// a wrapper to the output stream on Windows systems.
-func (l *intLogger) setColorization(opts *LoggerOptions) {
-	switch opts.Color {
-	case ColorOff:
-		fallthrough
-	case ForceColor:
+func withColor(w *writer) {
+	switch w.color {
+	case ColorOff, ForceColor:
 		return
 	case AutoColor:
-		fi := l.checkWriterIsFile()
-		isUnixTerm := isatty.IsTerminal(fi.Fd())
-		isCygwinTerm := isatty.IsCygwinTerminal(fi.Fd())
-		isTerm := isUnixTerm || isCygwinTerm
-		if !isTerm {
-			l.writer.color = ColorOff
+		fd := os.Stdout.Fd()
+		if isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd) {
+			return
 		}
+		w.color = ColorOff
 	}
 }

@@ -11,8 +11,10 @@ type writer struct {
 	color ColorOption
 }
 
-func newWriter(w io.Writer, color ColorOption) *writer {
-	return &writer{w: w, color: color}
+func newWriter(out io.Writer, color ColorOption) *writer {
+	w := &writer{w: out, color: color}
+	withColor(w)
+	return w
 }
 
 func (w *writer) Flush(level Level) (err error) {
