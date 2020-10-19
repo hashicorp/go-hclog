@@ -715,7 +715,6 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, fmt.Sprintf("%v:%d", file, line-1), raw["@caller"])
-
 	})
 
 	t.Run("handles non-serializable entries", func(t *testing.T) {
