@@ -38,6 +38,9 @@ const (
 
 	// Error information about unrecoverable events.
 	Error Level = 5
+
+	// Off disables all logging output.
+	Off Level = 6
 )
 
 // Format is a simple convience type for when formatting is required. When
@@ -96,6 +99,8 @@ func LevelFromString(levelStr string) Level {
 		return Warn
 	case "error":
 		return Error
+	case "off":
+		return Off
 	default:
 		return NoLevel
 	}
@@ -115,6 +120,8 @@ func (l Level) String() string {
 		return "error"
 	case NoLevel:
 		return "none"
+	case Off:
+		return "off"
 	default:
 		return "unknown"
 	}

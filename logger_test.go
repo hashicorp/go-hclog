@@ -413,6 +413,32 @@ func TestLogger(t *testing.T) {
 		rest = str[dataIdx+1:]
 		assert.Equal(t, "[INFO]  this is another test: production=\"13 beans/day\"\n", rest)
 	})
+
+	t.Run("named logger with disabled parent", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			// No name!
+			Output: &buf,
+			Level:  Off,
+		})
+
+		logger.Info("this is test")
+		str := buf.String()
+		if len(str) > 0 {
+			t.Fatal("output from disabled logger:", str)
+		}
+
+		buf.Reset()
+
+		another := logger.Named("sublogger")
+		another.SetLevel(Info)
+		another.Info("this is test")
+		str = buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  sublogger: this is test\n", rest)
+	})
 }
 
 func TestLogger_leveledWriter(t *testing.T) {
