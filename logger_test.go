@@ -419,8 +419,9 @@ func TestLogger(t *testing.T) {
 
 		logger := New(&LoggerOptions{
 			// No name!
-			Output: &buf,
-			Level:  Off,
+			Output:            &buf,
+			Level:             Off,
+			IndependentLevels: true,
 		})
 
 		logger.Info("this is test")
@@ -438,6 +439,13 @@ func TestLogger(t *testing.T) {
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 		assert.Equal(t, "[INFO]  sublogger: this is test\n", rest)
+
+		buf.Reset()
+		logger.Info("parent should still be quiet")
+		str = buf.String()
+		if len(str) > 0 {
+			t.Fatal("output from disabled logger:", str)
+		}
 	})
 }
 
