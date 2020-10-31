@@ -21,9 +21,13 @@ import (
 	"github.com/fatih/color"
 )
 
-// TimeFormat to use for logging. This is a version of RFC3339 that contains
-// contains millisecond precision
-const TimeFormat = "2006-01-02T15:04:05.000Z0700"
+// TimeFormatPlain is the time format to use for plain (non-JSON) output.
+// This is a version of RFC3339 that contains millisecond precision.
+const TimeFormatPlain = "2006-01-02T15:04:05.000Z0700"
+
+// TimeFormatJSON is the time format to use for JSON output.
+// This is a version of RFC3339 that contains microsecond precision.
+const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
@@ -56,6 +60,7 @@ type intLogger struct {
 	callerOffset int
 	name         string
 	timeFormat   string
+	disableTime  bool
 
 	// This is an interface so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
@@ -110,7 +115,8 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	l := &intLogger{
 		json:              opts.JSONFormat,
 		name:              opts.Name,
-		timeFormat:        TimeFormat,
+		timeFormat:        TimeFormatPlain,
+		disableTime:       opts.DisableTime,
 		mutex:             mutex,
 		writer:            newWriter(output, opts.Color),
 		level:             new(int32),
@@ -121,13 +127,14 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		l.callerOffset = offsetIntLogger
 	}
 
-	l.setColorization(opts)
-
-	if opts.DisableTime {
-		l.timeFormat = ""
-	} else if opts.TimeFormat != "" {
+	if l.json {
+		l.timeFormat = TimeFormatJSON
+	}
+	if opts.TimeFormat != "" {
 		l.timeFormat = opts.TimeFormat
 	}
+
+	l.setColorization(opts)
 
 	atomic.StoreInt32(l.level, int32(level))
 
@@ -194,7 +201,8 @@ func trimCallerPath(path string) string {
 
 // Non-JSON logging format function
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
-	if len(l.timeFormat) > 0 {
+
+	if !l.disableTime {
 		l.writer.WriteString(t.Format(l.timeFormat))
 		l.writer.WriteByte(' ')
 	}
@@ -420,9 +428,8 @@ func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg strin
 	vals := map[string]interface{}{
 		"@message": msg,
 	}
-	if len(l.timeFormat) > 0 {
-		// FIXME this doesn't respect LoggerOptions.TimeFormat
-		vals["@timestamp"] = t.Format("2006-01-02T15:04:05.000000Z07:00")
+	if !l.disableTime {
+		vals["@timestamp"] = t.Format(l.timeFormat)
 	}
 
 	var levelStr string
@@ -638,7 +645,7 @@ func (l *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 }
 
 func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
-      newLog := *l
+	newLog := *l
 	if l.callerOffset > 0 {
 		// the stack is
 		// logger.printf() -> l.Output() ->l.out.writer(hclog:stdlogAdaptor.write) -> hclog:stdlogAdaptor.dispatch()
