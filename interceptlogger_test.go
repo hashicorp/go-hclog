@@ -3,10 +3,13 @@ package hclog
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInterceptLogger(t *testing.T) {
@@ -167,25 +170,31 @@ func TestInterceptLogger(t *testing.T) {
 		var sbuf bytes.Buffer
 
 		intercept := NewInterceptLogger(&LoggerOptions{
-			Level:  Info,
-			Output: &buf,
+			Level:           Info,
+			Output:          &buf,
+			IncludeLocation: true,
 		})
 
 		sink := NewSinkAdapter(&LoggerOptions{
-			Level:      Debug,
-			Output:     &sbuf,
-			JSONFormat: true,
+			Level:           Debug,
+			Output:          &sbuf,
+			JSONFormat:      true,
+			IncludeLocation: true,
 		})
 
 		intercept.RegisterSink(sink)
 		defer intercept.DeregisterSink(sink)
 
 		intercept.Info("this is a test", "who", "caller")
+		_, file, line, ok := runtime.Caller(0)
+		require.True(t, ok)
+
 		output := buf.String()
 		dataIdx := strings.IndexByte(output, ' ')
 		rest := output[dataIdx+1:]
 
-		assert.Equal(t, "[INFO]  this is a test: who=caller\n", rest)
+		expected := fmt.Sprintf("[INFO]  go-hclog/interceptlogger_test.go:%d: this is a test: who=caller\n", line-1)
+		assert.Equal(t, expected, rest)
 
 		b := sbuf.Bytes()
 
@@ -196,6 +205,7 @@ func TestInterceptLogger(t *testing.T) {
 
 		assert.Equal(t, "this is a test", raw["@message"])
 		assert.Equal(t, "caller", raw["who"])
+		assert.Equal(t, fmt.Sprintf("%v:%d", file, line-1), raw["@caller"])
 	})
 
 	t.Run("handles parent with arguments and log level args", func(t *testing.T) {
@@ -278,18 +288,20 @@ func TestInterceptLogger(t *testing.T) {
 		defer logger.DeregisterSink(sink)
 
 		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
+		_, _, line, ok := runtime.Caller(0)
+		require.True(t, ok)
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		expected := fmt.Sprintf("[INFO]  go-hclog/interceptlogger_test.go:%d: test: this is test: who=programmer why=\"testing is fun\"\n", line-1)
+		assert.Equal(t, expected, rest)
 
 		str = sbuf.String()
 		dataIdx = strings.IndexByte(str, ' ')
 		rest = str[dataIdx+1:]
-		assert.Equal(t, "[INFO]  go-hclog/interceptlogger_test.go:280: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, expected, rest)
 	})
 
 	t.Run("supports resetting the output", func(t *testing.T) {

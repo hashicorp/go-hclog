@@ -52,10 +52,10 @@ var _ Logger = &intLogger{}
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
 type intLogger struct {
-	json       bool
-	caller     bool
-	name       string
-	timeFormat string
+	json         bool
+	callerOffset int
+	name         string
+	timeFormat   string
 
 	// This is an interface so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
@@ -79,7 +79,12 @@ func New(opts *LoggerOptions) Logger {
 // NewSinkAdapter returns a SinkAdapter with configured settings
 // defined by LoggerOptions
 func NewSinkAdapter(opts *LoggerOptions) SinkAdapter {
-	return newLogger(opts)
+	l := newLogger(opts)
+	if l.callerOffset > 0 {
+		// extra frames for interceptLogger.{Warn,Info,Log,etc...}, and SinkAdapter.Accept
+		l.callerOffset += 2
+	}
+	return l
 }
 
 func newLogger(opts *LoggerOptions) *intLogger {
@@ -104,7 +109,6 @@ func newLogger(opts *LoggerOptions) *intLogger {
 
 	l := &intLogger{
 		json:              opts.JSONFormat,
-		caller:            opts.IncludeLocation,
 		name:              opts.Name,
 		timeFormat:        TimeFormat,
 		mutex:             mutex,
@@ -112,6 +116,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level:             new(int32),
 		exclude:           opts.Exclude,
 		independentLevels: opts.IndependentLevels,
+	}
+	if opts.IncludeLocation {
+		l.callerOffset = offsetIntLogger
 	}
 
 	l.setColorization(opts)
@@ -126,6 +133,10 @@ func newLogger(opts *LoggerOptions) *intLogger {
 
 	return l
 }
+
+// offsetIntLogger is the stack frame offset in the call stack for the caller to
+// one of the Warn,Info,Log,etc methods.
+const offsetIntLogger = 3
 
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
@@ -195,17 +206,8 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 		l.writer.WriteString("[?????]")
 	}
 
-	offset := 3
-	if l.caller {
-		// Check if the caller is inside our package and inside
-		// a logger implementation file
-		if _, file, _, ok := runtime.Caller(3); ok {
-			if strings.HasSuffix(file, "intlogger.go") || strings.HasSuffix(file, "interceptlogger.go") {
-				offset = 4
-			}
-		}
-
-		if _, file, line, ok := runtime.Caller(offset); ok {
+	if l.callerOffset > 0 {
+		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
 			l.writer.WriteByte(' ')
 			l.writer.WriteString(trimCallerPath(file))
 			l.writer.WriteByte(':')
@@ -442,8 +444,8 @@ func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg strin
 		vals["@module"] = name
 	}
 
-	if l.caller {
-		if _, file, line, ok := runtime.Caller(4); ok {
+	if l.callerOffset > 0 {
+		if _, file, line, ok := runtime.Caller(l.callerOffset + 1); ok {
 			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
 		}
 	}
