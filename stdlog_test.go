@@ -2,15 +2,18 @@ package hclog
 
 import (
 	"bytes"
+	"fmt"
 	"log"
-	"regexp"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestStdlogAdapter(t *testing.T) {
+func TestStdlogAdapter_PickLevel(t *testing.T) {
 	t.Run("picks debug level", func(t *testing.T) {
 		var s stdlogAdapter
 
@@ -155,18 +158,26 @@ func TestStdlogAdapter_ForceLevel(t *testing.T) {
 	}
 }
 
-func TestFromLogger(t *testing.T) {
+func TestFromStandardLogger(t *testing.T) {
 	var buf bytes.Buffer
 
 	sl := log.New(&buf, "test-stdlib-log ", log.Ltime)
 
 	hl := FromStandardLogger(sl, &LoggerOptions{
-		Name: "hclog-inner",
+		Name:            "hclog-inner",
+		IncludeLocation: true,
 	})
 
 	hl.Info("this is a test", "name", "tester", "count", 1)
+	_, file, line, ok := runtime.Caller(0)
+	require.True(t, ok)
 
-	re := regexp.MustCompile(`test-stdlib-log [\d:]+ \[INFO\]  hclog-inner: this is a test: name=tester count=1`)
+	actual := buf.String()
+	suffix := fmt.Sprintf(
+		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
+		filepath.Base(file), line-1)
+	require.Equal(t, suffix, actual[25:])
 
-	assert.True(t, re.Match(buf.Bytes()))
+	prefix := "test-stdlib-log "
+	require.Equal(t, prefix, actual[:16])
 }
