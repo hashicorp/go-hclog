@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -17,8 +16,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 // TimeFormat to use for logging. This is a version of RFC3339 that contains
@@ -27,24 +24,6 @@ const TimeFormat = "2006-01-02T15:04:05.000Z0700"
 
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
-
-var (
-	_levelToBracket = map[Level]string{
-		Debug: "[DEBUG]",
-		Trace: "[TRACE]",
-		Info:  "[INFO] ",
-		Warn:  "[WARN] ",
-		Error: "[ERROR]",
-	}
-
-	_levelToColor = map[Level]*color.Color{
-		Debug: color.New(color.FgHiWhite),
-		Trace: color.New(color.FgHiGreen),
-		Info:  color.New(color.FgHiBlue),
-		Warn:  color.New(color.FgHiYellow),
-		Error: color.New(color.FgHiRed),
-	}
-)
 
 // Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}
@@ -120,8 +99,6 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	if opts.IncludeLocation {
 		l.callerOffset = offsetIntLogger
 	}
-
-	l.setColorization(opts)
 
 	if opts.DisableTime {
 		l.timeFormat = ""
@@ -319,6 +296,14 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 		l.writer.WriteString(string(stacktrace))
 		l.writer.WriteString("\n")
 	}
+}
+
+var _levelToBracket = map[Level]string{
+	Debug: "[DEBUG]",
+	Trace: "[TRACE]",
+	Info:  "[INFO] ",
+	Warn:  "[WARN] ",
+	Error: "[ERROR]",
 }
 
 func (l *intLogger) renderSlice(v reflect.Value) string {
@@ -616,7 +601,6 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 
 func (l *intLogger) resetOutput(opts *LoggerOptions) error {
 	l.writer = newWriter(opts.Output, opts.Color)
-	l.setColorization(opts)
 	return nil
 }
 
@@ -643,16 +627,6 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		inferLevels: opts.InferLevels,
 		forceLevel:  opts.ForceLevel,
 	}
-}
-
-// checks if the underlying io.Writer is a file, and
-// panics if not. For use by colorization.
-func (l *intLogger) checkWriterIsFile() *os.File {
-	fi, ok := l.writer.w.(*os.File)
-	if !ok {
-		panic("Cannot enable coloring of non-file Writers")
-	}
-	return fi
 }
 
 // Accept implements the SinkAdapter interface
