@@ -195,6 +195,22 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, str[:dataIdx], time.Now().Format(time.Kitchen))
 	})
 
+	t.Run("respects DisableTime", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:        "test",
+			Output:      &buf,
+			DisableTime: true,
+		})
+
+		logger.Info("Señorita banana")
+
+		str := buf.String()
+
+		assert.Equal(t, "[INFO]  test: Señorita banana\n", str)
+	})
+
 	t.Run("use with", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -532,6 +548,29 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, "programmer", raw["who"])
 		assert.Equal(t, "testing is fun", raw["why"])
+	})
+
+	t.Run("respects DisableTime", func(t *testing.T) {
+		var buf bytes.Buffer
+		logger := New(&LoggerOptions{
+			Name:        "test",
+			Output:      &buf,
+			JSONFormat:  true,
+			DisableTime: true,
+		})
+
+		logger.Info("Señorita banana")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		if val, ok := raw["@timestamp"]; ok {
+			t.Fatalf("got: '@timestamp' key (with value %v); want: no '@timestamp' key", val)
+		}
 	})
 
 	t.Run("json formatting with", func(t *testing.T) {
