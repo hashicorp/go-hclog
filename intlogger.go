@@ -646,6 +646,9 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		independentLevels: l.independentLevels,
 	}
 	if l.callerOffset > 0 {
+		// the stack is
+		// logger.printf() -> l.Output() ->l.out.writer(hclog:stdlogAdaptor.write) -> hclog:stdlogAdaptor.dispatch()
+		// So plus 4.
 		newLog.callerOffset = l.callerOffset + 4
 	}
 	return &stdlogAdapter{
