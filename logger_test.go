@@ -550,6 +550,33 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "testing is fun", raw["why"])
 	})
 
+	t.Run("use a different time format", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+			TimeFormat: time.Kitchen,
+		})
+
+		logger.Info("Lacatan banana")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		val, ok := raw["@timestamp"]
+		if !ok {
+			t.Fatal("missing '@timestamp' key")
+		}
+
+		assert.Equal(t, val, time.Now().Format(time.Kitchen))
+	})
+
 	t.Run("respects DisableTime", func(t *testing.T) {
 		var buf bytes.Buffer
 		logger := New(&LoggerOptions{
