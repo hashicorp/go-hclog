@@ -21,9 +21,9 @@ import (
 	"github.com/fatih/color"
 )
 
-// TimeFormatPlain is the time format to use for plain (non-JSON) output.
+// TimeFormat is the time format to use for plain (non-JSON) output.
 // This is a version of RFC3339 that contains millisecond precision.
-const TimeFormatPlain = "2006-01-02T15:04:05.000Z0700"
+const TimeFormat = "2006-01-02T15:04:05.000Z0700"
 
 // TimeFormatJSON is the time format to use for JSON output.
 // This is a version of RFC3339 that contains microsecond precision.
@@ -115,7 +115,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	l := &intLogger{
 		json:              opts.JSONFormat,
 		name:              opts.Name,
-		timeFormat:        TimeFormatPlain,
+		timeFormat:        TimeFormat,
 		disableTime:       opts.DisableTime,
 		mutex:             mutex,
 		writer:            newWriter(output, opts.Color),
