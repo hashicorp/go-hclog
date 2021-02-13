@@ -103,6 +103,28 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=[\"testing & qa\", dev]\n", rest)
 	})
 
+	t.Run("formats multiline values nicely", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "testing\nand other\npretty cool things")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		expected := `[INFO]  test: this is test: who=programmer
+  why=
+  | testing
+  | and other
+  | pretty cool things` + "\n  \n"
+		assert.Equal(t, expected, rest)
+	})
+
 	t.Run("outputs stack traces", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -151,7 +173,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:147: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:169: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 
 	t.Run("prefixes the name", func(t *testing.T) {

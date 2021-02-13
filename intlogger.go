@@ -261,6 +261,9 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			switch st := args[i+1].(type) {
 			case string:
 				val = st
+				if st == "" {
+					val = "\"\""
+				}
 			case int:
 				val = strconv.FormatInt(int64(st), 10)
 			case int64:
@@ -302,20 +305,32 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				}
 			}
 
-			l.writer.WriteByte(' ')
+			var key string
+
 			switch st := args[i].(type) {
 			case string:
-				l.writer.WriteString(st)
+				key = st
 			default:
-				l.writer.WriteString(fmt.Sprintf("%s", st))
+				key = fmt.Sprintf("%s", st)
 			}
-			l.writer.WriteByte('=')
 
-			if !raw && strings.ContainsAny(val, " \t\n\r") {
+			if strings.Contains(val, "\n") {
+				l.writer.WriteString("\n  ")
+				l.writer.WriteString(key)
+				l.writer.WriteString("=\n")
+				writeIndendent(l.writer, val, "  | ")
+				l.writer.WriteString("  ")
+			} else if !raw && strings.ContainsAny(val, " \t") {
+				l.writer.WriteByte(' ')
+				l.writer.WriteString(key)
+				l.writer.WriteByte('=')
 				l.writer.WriteByte('"')
 				l.writer.WriteString(val)
 				l.writer.WriteByte('"')
 			} else {
+				l.writer.WriteByte(' ')
+				l.writer.WriteString(key)
+				l.writer.WriteByte('=')
 				l.writer.WriteString(val)
 			}
 		}
@@ -326,6 +341,25 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 	if stacktrace != "" {
 		l.writer.WriteString(string(stacktrace))
 		l.writer.WriteString("\n")
+	}
+}
+
+func writeIndendent(w *writer, str string, indent string) {
+	for {
+		nl := strings.IndexByte(str, "\n"[0])
+		if nl == -1 {
+			if str != "" {
+				w.WriteString(indent)
+				w.WriteString(str)
+				w.WriteString("\n")
+			}
+			return
+		}
+
+		w.WriteString(indent)
+		w.WriteString(str[:nl])
+		w.WriteString("\n")
+		str = str[nl+1:]
 	}
 }
 
