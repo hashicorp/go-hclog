@@ -318,7 +318,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				l.writer.WriteString("\n  ")
 				l.writer.WriteString(key)
 				l.writer.WriteString("=\n")
-				writeIndendent(l.writer, val, "  | ")
+				writeIndent(l.writer, val, "  | ")
 				l.writer.WriteString("  ")
 			} else if !raw && strings.ContainsAny(val, " \t") {
 				l.writer.WriteByte(' ')
@@ -344,7 +344,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 	}
 }
 
-func writeIndendent(w *writer, str string, indent string) {
+func writeIndent(w *writer, str string, indent string) {
 	for {
 		nl := strings.IndexByte(str, "\n"[0])
 		if nl == -1 {
