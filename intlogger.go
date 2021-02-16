@@ -379,22 +379,19 @@ func (l *intLogger) renderSlice(v reflect.Value) string {
 
 		switch sv.Kind() {
 		case reflect.String:
-			val = sv.String()
+			val = strconv.Quote(sv.String())
 		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
 			val = strconv.FormatInt(sv.Int(), 10)
 		case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			val = strconv.FormatUint(sv.Uint(), 10)
 		default:
 			val = fmt.Sprintf("%v", sv.Interface())
+			if strings.ContainsAny(val, " \t\n\r") {
+				val = strconv.Quote(val)
+			}
 		}
 
-		if strings.ContainsAny(val, " \t\n\r") {
-			buf.WriteByte('"')
-			buf.WriteString(val)
-			buf.WriteByte('"')
-		} else {
-			buf.WriteString(val)
-		}
+		buf.WriteString(val)
 	}
 
 	buf.WriteRune(']')

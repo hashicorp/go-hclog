@@ -86,7 +86,7 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=[testing, dev, 1, 5, \"[3 4]\"]\n", rest)
 	})
 
-	t.Run("renders values in slices with quotes if needed", func(t *testing.T) {
+	t.Run("renders values in slices with quotes", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
@@ -100,7 +100,7 @@ func TestLogger(t *testing.T) {
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=[\"testing & qa\", dev]\n", rest)
+		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=[\"testing & qa\", \"dev\"]\n", rest)
 	})
 
 	t.Run("formats multiline values nicely", func(t *testing.T) {
