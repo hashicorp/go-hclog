@@ -55,7 +55,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return true
 			}
 
-			if !isNamedType(recv.Type, "github.com/hashicorp/go-hclog", "Logger") {
+			if !isNamedType(recv.Type, "github.com/hashicorp/go-hclog", "Logger") &&
+				!isNamedType(recv.Type, "github.com/hashicorp/go-hclog", "InterceptLogger") {
 				return true
 			}
 
