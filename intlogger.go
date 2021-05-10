@@ -254,14 +254,12 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			l.updateCallerOffset()
 		}
 
-		if l.callerOffset > 0 {
-			if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
-				l.writer.WriteByte(' ')
-				l.writer.WriteString(trimCallerPath(file))
-				l.writer.WriteByte(':')
-				l.writer.WriteString(strconv.Itoa(line))
-				l.writer.WriteByte(':')
-			}
+		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
+			l.writer.WriteByte(' ')
+			l.writer.WriteString(trimCallerPath(file))
+			l.writer.WriteByte(':')
+			l.writer.WriteString(strconv.Itoa(line))
+			l.writer.WriteByte(':')
 		}
 	}
 
@@ -534,11 +532,10 @@ func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg strin
 		l.updateCallerOffset()
 	}
 
-	if l.callerOffset > 0 {
-		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
-			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
-		}
+	if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
+		vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
 	}
+
 	return vals
 }
 
