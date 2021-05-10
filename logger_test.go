@@ -176,6 +176,30 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:169: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 
+	t.Run("includes the caller location excluding helper functions", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logMe := func(l Logger) {
+			l.Info("this is test", "who", "programmer", "why", "testing is fun")
+		}
+
+		logger := New(&LoggerOptions{
+			Name:             "test",
+			Output:           &buf,
+			IncludeLocation:  true,
+			AdditionalLocationOffset: 1,
+		})
+
+		logMe(logger)
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		// This test will break if you move this around, it's line dependent, just fyi
+		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:193: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+	})
+
 	t.Run("prefixes the name", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -791,6 +815,36 @@ func TestLogger_JSON(t *testing.T) {
 		})
 
 		logger.Info("this is test")
+		_, file, line, ok := runtime.Caller(0)
+		require.True(t, ok)
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, fmt.Sprintf("%v:%d", file, line-1), raw["@caller"])
+	})
+
+	t.Run("includes the caller location excluding helper functions", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logMe := func(l Logger) {
+			l.Info("this is test", "who", "programmer", "why", "testing is fun")
+		}
+
+		logger := New(&LoggerOptions{
+			Name:             "test",
+			Output:           &buf,
+			JSONFormat:       true,
+			IncludeLocation:  true,
+			AdditionalLocationOffset: 1,
+		})
+
+		logMe(logger)
 		_, file, line, ok := runtime.Caller(0)
 		require.True(t, ok)
 

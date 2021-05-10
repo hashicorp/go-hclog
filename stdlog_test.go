@@ -181,3 +181,32 @@ func TestFromStandardLogger(t *testing.T) {
 	prefix := "test-stdlib-log "
 	require.Equal(t, prefix, actual[:16])
 }
+
+func TestFromStandardLogger_helper(t *testing.T) {
+	var buf bytes.Buffer
+
+	sl := log.New(&buf, "test-stdlib-log ", log.Ltime)
+
+	hl := FromStandardLogger(sl, &LoggerOptions{
+		Name:             "hclog-inner",
+		IncludeLocation:  true,
+		AdditionalLocationOffset: 1,
+	})
+
+	helper := func() {
+		hl.Info("this is a test", "name", "tester", "count", 1)
+	}
+
+	helper()
+	_, file, line, ok := runtime.Caller(0)
+	require.True(t, ok)
+
+	actual := buf.String()
+	suffix := fmt.Sprintf(
+		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
+		filepath.Base(file), line-1)
+	require.Equal(t, suffix, actual[25:])
+
+	prefix := "test-stdlib-log "
+	require.Equal(t, prefix, actual[:16])
+}
