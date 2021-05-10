@@ -19,10 +19,7 @@ type interceptLogger struct {
 
 func NewInterceptLogger(opts *LoggerOptions) InterceptLogger {
 	l := newLogger(opts)
-	if l.callerOffset > 0 {
-		// extra frames for interceptLogger.{Warn,Info,Log,etc...}, and interceptLogger.log
-		l.callerOffset += 2
-	}
+
 	intercept := &interceptLogger{
 		Logger:    l,
 		mu:        new(sync.Mutex),

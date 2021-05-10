@@ -304,6 +304,44 @@ func TestInterceptLogger(t *testing.T) {
 		assert.Equal(t, expected, rest)
 	})
 
+	t.Run("derived standard loggers includes the caller location", func(t *testing.T) {
+		var buf bytes.Buffer
+		var sbuf bytes.Buffer
+
+		logger := NewInterceptLogger(&LoggerOptions{
+			Name:            "test",
+			Level:           Debug,
+			Output:          &buf,
+			IncludeLocation: true,
+		})
+
+		standard := logger.StandardLogger(&StandardLoggerOptions{InferLevels: true})
+
+		sink := NewSinkAdapter(&LoggerOptions{
+			IncludeLocation: true,
+			Level:           Debug,
+			Output:          &sbuf,
+		})
+		logger.RegisterSink(sink)
+		defer logger.DeregisterSink(sink)
+
+		standard.Println("[DEBUG] test log")
+		_, _, line, ok := runtime.Caller(0)
+		require.True(t, ok)
+
+		output := buf.String()
+		dataIdx := strings.IndexByte(output, ' ')
+		rest := output[dataIdx+1:]
+
+		expected := fmt.Sprintf("[DEBUG] go-hclog/interceptlogger_test.go:%d: test: test log\n", line-1)
+		assert.Equal(t, expected, rest)
+
+		output = sbuf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		assert.Equal(t, expected, rest)
+	})
+
 	t.Run("supports resetting the output", func(t *testing.T) {
 		var first, second bytes.Buffer
 

@@ -184,9 +184,9 @@ func TestLogger(t *testing.T) {
 		}
 
 		logger := New(&LoggerOptions{
-			Name:             "test",
-			Output:           &buf,
-			IncludeLocation:  true,
+			Name:                     "test",
+			Output:                   &buf,
+			IncludeLocation:          true,
 			AdditionalLocationOffset: 1,
 		})
 
@@ -837,10 +837,10 @@ func TestLogger_JSON(t *testing.T) {
 		}
 
 		logger := New(&LoggerOptions{
-			Name:             "test",
-			Output:           &buf,
-			JSONFormat:       true,
-			IncludeLocation:  true,
+			Name:                     "test",
+			Output:                   &buf,
+			JSONFormat:               true,
+			IncludeLocation:          true,
 			AdditionalLocationOffset: 1,
 		})
 

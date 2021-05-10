@@ -74,6 +74,9 @@ type intLogger struct {
 
 	// create subloggers with their own level setting
 	independentLevels bool
+
+	// Options the logger was created with
+	opts LoggerOptions
 }
 
 // New returns a configured logger.
@@ -84,12 +87,7 @@ func New(opts *LoggerOptions) Logger {
 // NewSinkAdapter returns a SinkAdapter with configured settings
 // defined by LoggerOptions
 func NewSinkAdapter(opts *LoggerOptions) SinkAdapter {
-	l := newLogger(opts)
-	if l.callerOffset > 0 {
-		// extra frames for interceptLogger.{Warn,Info,Log,etc...}, and SinkAdapter.Accept
-		l.callerOffset += 2
-	}
-	return l
+	return newLogger(opts)
 }
 
 func newLogger(opts *LoggerOptions) *intLogger {
@@ -122,9 +120,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		level:             new(int32),
 		exclude:           opts.Exclude,
 		independentLevels: opts.IndependentLevels,
-	}
-	if opts.IncludeLocation {
-		l.callerOffset = offsetIntLogger + opts.AdditionalLocationOffset
+		callerOffset:      -1,
+
+		opts: *opts,
 	}
 
 	if l.json {
@@ -199,6 +197,43 @@ func trimCallerPath(path string) string {
 	return path[idx+1:]
 }
 
+func (l *intLogger) updateCallerOffset() {
+finder:
+	for i := 1; i < 11; i++ {
+		if pc, file, _, ok := runtime.Caller(i); ok {
+			if !ok {
+				break
+			}
+
+			f := runtime.FuncForPC(pc)
+			name := f.Name()
+
+			switch {
+			case strings.HasPrefix(name, "github.com/hashicorp/go-hclog."):
+				if strings.HasSuffix(file, "_test.go") {
+					// - 1 because we call this function but it's not in the call path of the logging
+					l.callerOffset = i - 1
+					break finder
+				}
+
+				continue finder
+			case strings.HasPrefix(name, "log."):
+				continue
+			default:
+				// - 1 because we call this function but it's not in the call path the logging
+				l.callerOffset = i - 1
+				break finder
+			}
+		}
+	}
+
+	if l.callerOffset == -1 {
+		l.callerOffset = 0
+	}
+
+	l.callerOffset += l.opts.AdditionalLocationOffset
+}
+
 // Non-JSON logging format function
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
 
@@ -214,13 +249,19 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 		l.writer.WriteString("[?????]")
 	}
 
-	if l.callerOffset > 0 {
-		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
-			l.writer.WriteByte(' ')
-			l.writer.WriteString(trimCallerPath(file))
-			l.writer.WriteByte(':')
-			l.writer.WriteString(strconv.Itoa(line))
-			l.writer.WriteByte(':')
+	if l.opts.IncludeLocation {
+		if l.callerOffset == -1 {
+			l.updateCallerOffset()
+		}
+
+		if l.callerOffset > 0 {
+			if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
+				l.writer.WriteByte(' ')
+				l.writer.WriteString(trimCallerPath(file))
+				l.writer.WriteByte(':')
+				l.writer.WriteString(strconv.Itoa(line))
+				l.writer.WriteByte(':')
+			}
 		}
 	}
 
@@ -485,8 +526,16 @@ func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg strin
 		vals["@module"] = name
 	}
 
+	if !l.opts.IncludeLocation {
+		return vals
+	}
+
+	if l.callerOffset == -1 {
+		l.updateCallerOffset()
+	}
+
 	if l.callerOffset > 0 {
-		if _, file, line, ok := runtime.Caller(l.callerOffset + 1); ok {
+		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
 			vals["@caller"] = fmt.Sprintf("%s:%d", file, line)
 		}
 	}
@@ -677,12 +726,10 @@ func (l *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 
 func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 	newLog := *l
-	if l.callerOffset > 0 {
-		// the stack is
-		// logger.printf() -> l.Output() ->l.out.writer(hclog:stdlogAdaptor.write) -> hclog:stdlogAdaptor.dispatch()
-		// So plus 4.
-		newLog.callerOffset = l.callerOffset + 4
-	}
+
+	// Reset the offset calculation
+	newLog.callerOffset = -1
+
 	return &stdlogAdapter{
 		log:         &newLog,
 		inferLevels: opts.InferLevels,
