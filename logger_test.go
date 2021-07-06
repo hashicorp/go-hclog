@@ -184,9 +184,9 @@ func TestLogger(t *testing.T) {
 		}
 
 		logger := New(&LoggerOptions{
-			Name:             "test",
-			Output:           &buf,
-			IncludeLocation:  true,
+			Name:                     "test",
+			Output:                   &buf,
+			IncludeLocation:          true,
 			AdditionalLocationOffset: 1,
 		})
 
@@ -412,6 +412,32 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		assert.Equal(t, "[INFO]  test: this is test: bytes=0xc perms=0755 bits=0b101\n", rest)
+	})
+
+	t.Run("supports quote formatting", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		// unsafe is a string containing control characters and a byte
+		// sequence which is invalid utf8 ("\xFFa") to assert that all
+		// characters are properly encoded and produce valid utf8 output
+		unsafe := "foo\nbar\bbaz\xFFa"
+
+		logger.Info("this is test",
+			"unquoted", "unquoted", "quoted", Quote("quoted"),
+			"unsafeq", Quote(unsafe))
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  test: this is test: "+
+			"unquoted=unquoted quoted=\"quoted\" "+
+			"unsafeq=\"foo\\nbar\\bbaz\\xffa\"\n", rest)
 	})
 
 	t.Run("supports resetting the output", func(t *testing.T) {
@@ -804,6 +830,49 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, float64(5), raw["bits"])
 	})
 
+	t.Run("ignores quote formatting requests", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+		})
+
+		// unsafe is a string containing control characters and a byte
+		// sequence which is invalid utf8 ("\xFFa") to assert that all
+		// characters are properly encoded and produce valid json
+		unsafe := "foo\nbar\bbaz\xFFa"
+
+		logger.Info("this is test",
+			"unquoted", "unquoted", "quoted", Quote("quoted"),
+			"unsafeq", Quote(unsafe), "unsafe", unsafe)
+
+		b := buf.Bytes()
+
+		// Assert the JSON only contains valid utf8 strings with the
+		// illegal byte replaced with the utf8 replacement character,
+		// and not invalid json with byte(255)
+		// Note: testify/assert.Contains did not work here
+		if needle := []byte(`\ufffda`); !bytes.Contains(b, needle) {
+			t.Fatalf("could not find %q (%v) in json bytes: %q", needle, needle, b)
+		}
+		if needle := []byte{255, 'a'}; bytes.Contains(b, needle) {
+			t.Fatalf("found %q (%v) in json bytes: %q", needle, needle, b)
+		}
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test", raw["@message"])
+		assert.Equal(t, "unquoted", raw["unquoted"])
+		assert.Equal(t, "quoted", raw["quoted"])
+		assert.Equal(t, "foo\nbar\bbaz\uFFFDa", raw["unsafe"])
+		assert.Equal(t, "foo\nbar\bbaz\uFFFDa", raw["unsafeq"])
+	})
+
 	t.Run("includes the caller location", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -837,10 +906,10 @@ func TestLogger_JSON(t *testing.T) {
 		}
 
 		logger := New(&LoggerOptions{
-			Name:             "test",
-			Output:           &buf,
-			JSONFormat:       true,
-			IncludeLocation:  true,
+			Name:                     "test",
+			Output:                   &buf,
+			JSONFormat:               true,
+			IncludeLocation:          true,
 			AdditionalLocationOffset: 1,
 		})
 
