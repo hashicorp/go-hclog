@@ -103,6 +103,40 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=[\"testing & qa\", \"dev\"]\n", rest)
 	})
 
+	t.Run("escapes quotes in values", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", `this is "quoted"`)
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, `[INFO]  test: this is test: who=programmer why="this is \"quoted\""`+"\n", rest)
+	})
+
+	t.Run("quotes when there are nonprintable sequences in a value", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "\U0001F603")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  test: this is test: who=programmer why=\"\U0001F603\"\n", rest)
+	})
+
 	t.Run("formats multiline values nicely", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -155,49 +189,6 @@ func TestLogger(t *testing.T) {
 		require.True(t, len(lines) > 1)
 
 		assert.Equal(t, "github.com/hashicorp/go-hclog.Stacktrace", lines[1])
-	})
-
-	t.Run("includes the caller location", func(t *testing.T) {
-		var buf bytes.Buffer
-
-		logger := New(&LoggerOptions{
-			Name:            "test",
-			Output:          &buf,
-			IncludeLocation: true,
-		})
-
-		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
-
-		str := buf.String()
-		dataIdx := strings.IndexByte(str, ' ')
-		rest := str[dataIdx+1:]
-
-		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:169: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
-	})
-
-	t.Run("includes the caller location excluding helper functions", func(t *testing.T) {
-		var buf bytes.Buffer
-
-		logMe := func(l Logger) {
-			l.Info("this is test", "who", "programmer", "why", "testing is fun")
-		}
-
-		logger := New(&LoggerOptions{
-			Name:                     "test",
-			Output:                   &buf,
-			IncludeLocation:          true,
-			AdditionalLocationOffset: 1,
-		})
-
-		logMe(logger)
-
-		str := buf.String()
-		dataIdx := strings.IndexByte(str, ' ')
-		rest := str[dataIdx+1:]
-
-		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_test.go:193: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
 	})
 
 	t.Run("prefixes the name", func(t *testing.T) {
