@@ -17,11 +17,8 @@ JSON output mode for production.
 
 ## Stability Note
 
-While this library is fully open source and HashiCorp will be maintaining it
-(since we are and will be making extensive use of it), the API and output
-format is subject to minor changes as we fully bake and vet it in our projects.
-This notice will be removed once it's fully integrated into our major projects
-and no further changes are anticipated.
+This library has reached 1.0 stability. It's API can be considered solidified
+and promised through future versions.
 
 ## Installation and Docs
 
