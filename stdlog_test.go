@@ -69,6 +69,68 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 	})
 }
 
+func TestStdlogAdapter_TrimTimestamp(t *testing.T) {
+	cases := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{
+			name:   "Go log Ldate",
+			input:  "2009/01/23 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "Go log Ldate|Ltime",
+			input:  "2009/01/23 01:23:23 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "Go log Ldate|Ltime|Lmicroseconds",
+			input:  "2009/01/23 01:23:23.123123 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "Go log Ltime",
+			input:  "01:23:23 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "Go log Ltime|Lmicroseconds",
+			input:  "01:23:23.123123 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "ISO 8601 date",
+			input:  "2021-10-28 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "ISO 8601 date and time",
+			input:  "2021-10-28T19:27:28+00:00 [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "ISO 8601 date and time zulu",
+			input:  "2021-10-28T19:27:28Z [ERR] message",
+			expect: "[ERR] message",
+		},
+		{
+			name:   "no timestamp",
+			input:  "[ERR] message",
+			expect: "[ERR] message",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var s stdlogAdapter
+			got := s.trimTimestamp(c.input)
+			assert.Equal(t, c.expect, got)
+		})
+	}
+}
+
 func TestStdlogAdapter_ForceLevel(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -188,8 +250,8 @@ func TestFromStandardLogger_helper(t *testing.T) {
 	sl := log.New(&buf, "test-stdlib-log ", log.Ltime)
 
 	hl := FromStandardLogger(sl, &LoggerOptions{
-		Name:             "hclog-inner",
-		IncludeLocation:  true,
+		Name:                     "hclog-inner",
+		IncludeLocation:          true,
 		AdditionalLocationOffset: 1,
 	})
 

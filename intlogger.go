@@ -703,9 +703,10 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		newLog.callerOffset = l.callerOffset + 4
 	}
 	return &stdlogAdapter{
-		log:         &newLog,
-		inferLevels: opts.InferLevels,
-		forceLevel:  opts.ForceLevel,
+		log:                      &newLog,
+		inferLevels:              opts.InferLevels,
+		inferLevelsWithTimestamp: opts.InferLevelsWithTimestamp,
+		forceLevel:               opts.ForceLevel,
 	}
 }
 

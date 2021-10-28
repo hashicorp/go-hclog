@@ -143,3 +143,6 @@ log.Printf("[DEBUG] %d", 42)
 Notice that if `appLogger` is initialized with the `INFO` log level _and_ you
 specify `InferLevels: true`, you will not see any output here. You must change
 `appLogger` to `DEBUG` to see output. See the docs for more information.
+
+If the log lines start with a timestamp you can use the
+`InferLevelsWithTimestamp` option to try and ignore them.
