@@ -120,6 +120,23 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, `[INFO]  test: this is test: who=programmer why="this is \"quoted\""`+"\n", rest)
 	})
 
+	t.Run("prints empty double quotes for empty strings", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", ``)
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, `[INFO]  test: this is test: who=programmer why=""`+"\n", rest)
+	})
+
 	t.Run("quotes when there are nonprintable sequences in a value", func(t *testing.T) {
 		var buf bytes.Buffer
 
