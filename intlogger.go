@@ -281,6 +281,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				val = st
 				if st == "" {
 					val = `""`
+					raw = true
 				}
 			case int:
 				val = strconv.FormatInt(int64(st), 10)
