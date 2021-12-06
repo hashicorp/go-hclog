@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// Regex to ignore characters commonly found in timestamp formats from the
+// beginning of inputs.
+var logTimestampRegexp = regexp.MustCompile(`^[\d\s\:\/\.\+-TZ]*`)
+
 // Provides a io.Writer to shim the data out of *log.Logger
 // and back into our Logger. This is basically the only way to
 // build upon *log.Logger.
@@ -81,9 +85,6 @@ func (s *stdlogAdapter) pickLevel(str string) (Level, string) {
 }
 
 func (s *stdlogAdapter) trimTimestamp(str string) string {
-	// Ignore characters commonly found in timestamp formats from the beginning
-	// of the input.
-	logTimestampRegexp := regexp.MustCompile(`^[\d\s\:\/\.\+-TZ]*`)
 	idx := logTimestampRegexp.FindStringIndex(str)
 	return str[idx[1]:]
 }
