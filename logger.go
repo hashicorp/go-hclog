@@ -248,6 +248,9 @@ type LoggerOptions struct {
 	// The time format to use instead of the default
 	TimeFormat string
 
+	// Control whether to use UTC instead of the default local time-zone
+	UTCTime bool
+
 	// Control whether or not to display the time at all. This is required
 	// because setting TimeFormat to empty assumes the default format.
 	DisableTime bool

@@ -60,6 +60,7 @@ type intLogger struct {
 	callerOffset int
 	name         string
 	timeFormat   string
+	useUtcTime   bool
 	disableTime  bool
 
 	// This is an interface so that it's shared by any derived loggers, since
@@ -116,6 +117,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		json:              opts.JSONFormat,
 		name:              opts.Name,
 		timeFormat:        TimeFormat,
+		useUtcTime:        opts.UTCTime,
 		disableTime:       opts.DisableTime,
 		mutex:             mutex,
 		writer:            newWriter(output, opts.Color),
@@ -153,6 +155,9 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 	}
 
 	t := time.Now()
+	if l.useUtcTime {
+		t = t.UTC()
+	}
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
