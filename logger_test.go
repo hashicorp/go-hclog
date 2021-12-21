@@ -256,7 +256,7 @@ func TestLogger(t *testing.T) {
 			Name:       "test",
 			Output:     &buf,
 			TimeFormat: time.Kitchen,
-			UTCTime:    true,
+			TimeFn:     func() time.Time { return time.Now().UTC() },
 		})
 
 		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
@@ -683,7 +683,7 @@ func TestLogger_JSON(t *testing.T) {
 			Output:     &buf,
 			JSONFormat: true,
 			TimeFormat: time.Kitchen,
-			UTCTime:    true,
+			TimeFn:     func() time.Time { return time.Now().UTC() },
 		})
 
 		logger.Info("Lacatan banana")
