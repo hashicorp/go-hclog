@@ -117,7 +117,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		json:              opts.JSONFormat,
 		name:              opts.Name,
 		timeFormat:        TimeFormat,
-		timeFn:            func() time.Time { return time.Now() },
+		timeFn:            time.Now,
 		disableTime:       opts.DisableTime,
 		mutex:             mutex,
 		writer:            newWriter(output, opts.Color),

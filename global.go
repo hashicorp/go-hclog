@@ -15,7 +15,7 @@ var (
 	DefaultOptions = &LoggerOptions{
 		Level:  DefaultLevel,
 		Output: DefaultOutput,
-		TimeFn: func() time.Time { return time.Now() },
+		TimeFn: time.Now,
 	}
 )
 
