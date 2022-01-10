@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
@@ -228,6 +229,8 @@ type StandardLoggerOptions struct {
 	ForceLevel Level
 }
 
+type TimeFunction = func() time.Time
+
 // LoggerOptions can be used to configure a new logger.
 type LoggerOptions struct {
 	// Name of the subsystem to prefix logs with
@@ -256,6 +259,9 @@ type LoggerOptions struct {
 
 	// The time format to use instead of the default
 	TimeFormat string
+
+	// A function which is called to get the time object that is formatted using `TimeFormat`
+	TimeFn TimeFunction
 
 	// Control whether or not to display the time at all. This is required
 	// because setting TimeFormat to empty assumes the default format.

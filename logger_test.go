@@ -249,6 +249,24 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, str[:dataIdx], time.Now().Format(time.Kitchen))
 	})
 
+	t.Run("use UTC time zone", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			TimeFormat: time.Kitchen,
+			TimeFn:     func() time.Time { return time.Now().UTC() },
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+
+		assert.Equal(t, str[:dataIdx], time.Now().UTC().Format(time.Kitchen))
+	})
+
 	t.Run("respects DisableTime", func(t *testing.T) {
 		var buf bytes.Buffer
 
@@ -655,6 +673,34 @@ func TestLogger_JSON(t *testing.T) {
 		}
 
 		assert.Equal(t, val, time.Now().Format(time.Kitchen))
+	})
+
+	t.Run("use UTC time zone", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:       "test",
+			Output:     &buf,
+			JSONFormat: true,
+			TimeFormat: time.Kitchen,
+			TimeFn:     func() time.Time { return time.Now().UTC() },
+		})
+
+		logger.Info("Lacatan banana")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		val, ok := raw["@timestamp"]
+		if !ok {
+			t.Fatal("missing '@timestamp' key")
+		}
+
+		assert.Equal(t, val, time.Now().UTC().Format(time.Kitchen))
 	})
 
 	t.Run("respects DisableTime", func(t *testing.T) {

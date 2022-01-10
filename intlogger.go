@@ -60,6 +60,7 @@ type intLogger struct {
 	callerOffset int
 	name         string
 	timeFormat   string
+	timeFn       TimeFunction
 	disableTime  bool
 
 	// This is an interface so that it's shared by any derived loggers, since
@@ -116,6 +117,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		json:              opts.JSONFormat,
 		name:              opts.Name,
 		timeFormat:        TimeFormat,
+		timeFn:            time.Now,
 		disableTime:       opts.DisableTime,
 		mutex:             mutex,
 		writer:            newWriter(output, opts.Color),
@@ -129,6 +131,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 
 	if l.json {
 		l.timeFormat = TimeFormatJSON
+	}
+	if opts.TimeFn != nil {
+		l.timeFn = opts.TimeFn
 	}
 	if opts.TimeFormat != "" {
 		l.timeFormat = opts.TimeFormat
@@ -152,7 +157,7 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 		return
 	}
 
-	t := time.Now()
+	t := l.timeFn()
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
