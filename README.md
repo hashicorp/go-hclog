@@ -99,7 +99,7 @@ into all the callers.
 ### Using `hclog.Fmt()`
 
 ```go
-var int totalBandwidth = 200
+totalBandwidth := 200
 appLogger.Info("total bandwidth exceeded", "bandwidth", hclog.Fmt("%d GB/s", totalBandwidth))
 ```
 
