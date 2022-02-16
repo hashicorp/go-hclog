@@ -257,6 +257,34 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  sublogger: this is test\n", rest)
 	})
 
+	t.Run("colorize", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			// No name!
+			Output:     &buf,
+			Level:      Trace,
+			Color:      ForceColor,
+			TimeFormat: "<time>",
+		})
+
+		logger.Trace("trace")
+		logger.Debug("debug")
+		logger.Info("info")
+		logger.Warn("warn")
+		logger.Error("error")
+		str := buf.String()
+
+		assert.Equal(t, ""+
+			"\033[92m<time> [TRACE] trace\n\033[0m"+
+			"\033[97m<time> [DEBUG] debug\n\033[0m"+
+			"\033[94m<time> [INFO]  info\n\033[0m"+
+			"\033[93m<time> [WARN]  warn\n\033[0m"+
+			"\033[91m<time> [ERROR] error\n\033[0m",
+			str,
+		)
+	})
+
 	t.Run("use a different time format", func(t *testing.T) {
 		var buf bytes.Buffer
 
