@@ -32,6 +32,15 @@ const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
 
+type colorize = func([]byte) []byte
+
+func colorizer(attr color.Attribute) colorize {
+	c := color.New(attr)
+	return func(b []byte) []byte {
+		return []byte(c.Sprintf("%s", b))
+	}
+}
+
 var (
 	_levelToBracket = map[Level]string{
 		Debug: "[DEBUG]",
@@ -41,12 +50,12 @@ var (
 		Error: "[ERROR]",
 	}
 
-	_levelToColor = map[Level]*color.Color{
-		Debug: color.New(color.FgHiWhite),
-		Trace: color.New(color.FgHiGreen),
-		Info:  color.New(color.FgHiBlue),
-		Warn:  color.New(color.FgHiYellow),
-		Error: color.New(color.FgHiRed),
+	_levelToColor = map[Level]colorize{
+		Debug: colorizer(color.FgHiWhite),
+		Trace: colorizer(color.FgHiGreen),
+		Info:  colorizer(color.FgHiBlue),
+		Warn:  colorizer(color.FgHiYellow),
+		Error: colorizer(color.FgHiRed),
 	}
 )
 

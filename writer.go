@@ -19,8 +19,7 @@ func (w *writer) Flush(level Level) (err error) {
 	var unwritten = w.b.Bytes()
 
 	if w.color != ColorOff {
-		color := _levelToColor[level]
-		unwritten = []byte(color.Sprintf("%s", unwritten))
+		unwritten = _levelToColor[level](unwritten)
 	}
 
 	if lw, ok := w.w.(LevelWriter); ok {
