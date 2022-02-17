@@ -30,9 +30,7 @@ const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
 
-type colorize = func([]byte) []byte
-
-func colorizer(color string) colorize {
+func colorizer(color string) func([]byte) []byte {
 	before := "\033[" + color + "m"
 	const after = "\033[0m"
 	return func(b []byte) []byte {
@@ -49,7 +47,7 @@ var (
 		Error: "[ERROR]",
 	}
 
-	_levelToColor = map[Level]colorize{
+	_levelToColor = map[Level]func([]byte) []byte{
 		Debug: colorizer("97"), // HiWhite
 		Trace: colorizer("92"), // HiGreen
 		Info:  colorizer("94"), // HiBlue
@@ -57,6 +55,10 @@ var (
 		Error: colorizer("91"), // HiRed
 	}
 )
+
+func colorize(level Level, b []byte) []byte {
+	return _levelToColor[level](b)
+}
 
 // Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}
