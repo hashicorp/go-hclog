@@ -17,8 +17,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 // TimeFormat is the time format to use for plain (non-JSON) output.
@@ -34,8 +32,8 @@ const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize
 
 type colorize = func([]byte) []byte
 
-func colorizer(attr color.Attribute) colorize {
-	before := "\033[" + fmt.Sprint(int(attr)) + "m"
+func colorizer(color string) colorize {
+	before := "\033[" + color + "m"
 	const after = "\033[0m"
 	return func(b []byte) []byte {
 		return append(append(append(make([]byte, 0, 5+len(b)+4), before...), b...), after...)
@@ -52,11 +50,11 @@ var (
 	}
 
 	_levelToColor = map[Level]colorize{
-		Debug: colorizer(color.FgHiWhite),
-		Trace: colorizer(color.FgHiGreen),
-		Info:  colorizer(color.FgHiBlue),
-		Warn:  colorizer(color.FgHiYellow),
-		Error: colorizer(color.FgHiRed),
+		Debug: colorizer("97"), // HiWhite
+		Trace: colorizer("92"), // HiGreen
+		Info:  colorizer("94"), // HiBlue
+		Warn:  colorizer("93"), // HiYellow
+		Error: colorizer("91"), // HiRed
 	}
 )
 
