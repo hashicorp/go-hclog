@@ -35,9 +35,9 @@ const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize
 type colorize = func([]byte) []byte
 
 func colorizer(attr color.Attribute) colorize {
-	c := color.New(attr)
+	c := color.New(attr).Sprint("%" + "s")
 	return func(b []byte) []byte {
-		return []byte(c.Sprintf("%s", b))
+		return []byte(fmt.Sprintf(c, b))
 	}
 }
 
