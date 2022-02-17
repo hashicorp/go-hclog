@@ -30,34 +30,30 @@ const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
 
-func colorizer(color string) func([]byte) []byte {
-	before := "\033[" + color + "m"
-	const after = "\033[0m"
-	return func(b []byte) []byte {
-		return append(append(append(make([]byte, 0, 5+len(b)+4), before...), b...), after...)
-	}
-}
-
 var (
 	_levelToBracket = map[Level]string{
-		Debug: "[DEBUG]",
 		Trace: "[TRACE]",
+		Debug: "[DEBUG]",
 		Info:  "[INFO] ",
 		Warn:  "[WARN] ",
 		Error: "[ERROR]",
 	}
 
-	_levelToColor = map[Level]func([]byte) []byte{
-		Debug: colorizer("97"), // HiWhite
-		Trace: colorizer("92"), // HiGreen
-		Info:  colorizer("94"), // HiBlue
-		Warn:  colorizer("93"), // HiYellow
-		Error: colorizer("91"), // HiRed
+	_levelToColor = [5]byte{
+		'2', // Trace: HiGreen   ESC[92m
+		'7', // Debug; HiWhite   ESC[97m
+		'4', // Info:  HiBlue    ESC[94m
+		'3', // Warn:  HiYellow  ESC[93m
+		'1', // Error: HiRed     ESC[91m
 	}
+	_ = [...]byte{_levelToColor[Trace-Trace], _levelToColor[Error-Trace]}
 )
 
 func colorize(level Level, b []byte) []byte {
-	return _levelToColor[level](b)
+	// ESC[92m ... ESC[0m
+	b = append(append(append(make([]byte, 0, 5+len(b)+4), "\033[9?m"...), b...), "\033[0m"...)
+	b[3] = _levelToColor[level-Trace]
+	return b
 }
 
 // Make sure that intLogger is a Logger
