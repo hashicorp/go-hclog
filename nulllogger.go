@@ -47,6 +47,8 @@ func (l *nullLogger) Named(name string) Logger { return l }
 
 func (l *nullLogger) ResetNamed(name string) Logger { return l }
 
+func (l *nullLogger) ResetOffset(offset int) Logger { return l }
+
 func (l *nullLogger) SetLevel(level Level) {}
 
 func (l *nullLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {

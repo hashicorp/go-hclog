@@ -666,6 +666,15 @@ func (l *intLogger) ResetNamed(name string) Logger {
 	return sl
 }
 
+// Create a new sub-Logger with a modified caller offset.
+func (l *intLogger) ResetOffset(offset int) Logger {
+	sl := l.copy()
+
+	sl.callerOffset = offset
+
+	return sl
+}
+
 func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
 	if opts.Output == nil {
 		return errors.New("given output is nil")

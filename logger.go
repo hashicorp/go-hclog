@@ -193,6 +193,9 @@ type Logger interface {
 	// the current name as well.
 	ResetNamed(name string) Logger
 
+	// Creates a logger with a new caller offset
+	ResetOffset(offset int) Logger
+
 	// Updates the level. This should affect all related loggers as well,
 	// unless they were created with IndependentLevels. If an
 	// implementation cannot update the level on the fly, it should no-op.
