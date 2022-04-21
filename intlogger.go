@@ -269,10 +269,13 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 
 	if name != "" {
 		l.writer.WriteString(name)
-		l.writer.WriteString(": ")
+		if msg != "" {
+			l.writer.WriteString(": ")
+			l.writer.WriteString(msg)
+		}
+	} else if msg != "" {
+		l.writer.WriteString(msg)
 	}
-
-	l.writer.WriteString(msg)
 
 	args = append(l.implied, args...)
 
