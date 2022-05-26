@@ -8,9 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestStdlogAdapter_PickLevel(t *testing.T) {
@@ -19,8 +16,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[DEBUG] coffee?")
 
-		assert.Equal(t, Debug, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Debug.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 
 	t.Run("picks trace level", func(t *testing.T) {
@@ -28,8 +25,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[TRACE] coffee?")
 
-		assert.Equal(t, Trace, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Trace.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 
 	t.Run("picks info level", func(t *testing.T) {
@@ -37,8 +34,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[INFO] coffee?")
 
-		assert.Equal(t, Info, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Info.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 
 	t.Run("picks warn level", func(t *testing.T) {
@@ -46,8 +43,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[WARN] coffee?")
 
-		assert.Equal(t, Warn, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Warn.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 
 	t.Run("picks error level", func(t *testing.T) {
@@ -55,8 +52,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[ERROR] coffee?")
 
-		assert.Equal(t, Error, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Error.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 
 	t.Run("picks error as err level", func(t *testing.T) {
@@ -64,8 +61,8 @@ func TestStdlogAdapter_PickLevel(t *testing.T) {
 
 		level, rest := s.pickLevel("[ERR] coffee?")
 
-		assert.Equal(t, Error, level)
-		assert.Equal(t, "coffee?", rest)
+		assertEqual(t, Error.String(), level.String())
+		assertEqual(t, "coffee?", rest)
 	})
 }
 
@@ -126,7 +123,7 @@ func TestStdlogAdapter_TrimTimestamp(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var s stdlogAdapter
 			got := s.trimTimestamp(c.input)
-			assert.Equal(t, c.expect, got)
+			assertEqual(t, c.expect, got)
 		})
 	}
 }
@@ -209,13 +206,13 @@ func TestStdlogAdapter_ForceLevel(t *testing.T) {
 			}
 
 			_, err := s.Write([]byte(c.write))
-			assert.NoError(t, err)
+			assertNoError(t, err)
 
 			errStr := stderr.String()
 			errDataIdx := strings.IndexByte(errStr, ' ')
 			errRest := errStr[errDataIdx+1:]
 
-			assert.Equal(t, c.expect, errRest)
+			assertEqual(t, c.expect, errRest)
 		})
 	}
 }
@@ -232,16 +229,16 @@ func TestFromStandardLogger(t *testing.T) {
 
 	hl.Info("this is a test", "name", "tester", "count", 1)
 	_, file, line, ok := runtime.Caller(0)
-	require.True(t, ok)
+	requireTrue(t, ok)
 
 	actual := buf.String()
 	suffix := fmt.Sprintf(
 		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
 		filepath.Base(file), line-1)
-	require.Equal(t, suffix, actual[25:])
+	requireEqual(t, suffix, actual[25:])
 
 	prefix := "test-stdlib-log "
-	require.Equal(t, prefix, actual[:16])
+	requireEqual(t, prefix, actual[:16])
 }
 
 func TestFromStandardLogger_helper(t *testing.T) {
@@ -261,14 +258,14 @@ func TestFromStandardLogger_helper(t *testing.T) {
 
 	helper()
 	_, file, line, ok := runtime.Caller(0)
-	require.True(t, ok)
+	requireTrue(t, ok)
 
 	actual := buf.String()
 	suffix := fmt.Sprintf(
 		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
 		filepath.Base(file), line-1)
-	require.Equal(t, suffix, actual[25:])
+	requireEqual(t, suffix, actual[25:])
 
 	prefix := "test-stdlib-log "
-	require.Equal(t, prefix, actual[:16])
+	requireEqual(t, prefix, actual[:16])
 }

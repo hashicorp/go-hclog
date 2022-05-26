@@ -3,8 +3,6 @@ package hclog
 import (
 	"regexp"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestExclude(t *testing.T) {
@@ -13,19 +11,19 @@ func TestExclude(t *testing.T) {
 		em.Add("foo")
 		em.Add("bar")
 
-		assert.True(t, em.Exclude(Info, "foo"))
-		assert.True(t, em.Exclude(Info, "bar"))
-		assert.False(t, em.Exclude(Info, "qux"))
-		assert.False(t, em.Exclude(Info, "foo qux"))
-		assert.False(t, em.Exclude(Info, "qux bar"))
+		assertTrue(t, em.Exclude(Info, "foo"))
+		assertTrue(t, em.Exclude(Info, "bar"))
+		assertFalse(t, em.Exclude(Info, "qux"))
+		assertFalse(t, em.Exclude(Info, "foo qux"))
+		assertFalse(t, em.Exclude(Info, "qux bar"))
 	})
 
 	t.Run("excludes by prefix", func(t *testing.T) {
 		ebp := ExcludeByPrefix("foo: ")
 
-		assert.True(t, ebp.Exclude(Info, "foo: rocks"))
-		assert.False(t, ebp.Exclude(Info, "foo"))
-		assert.False(t, ebp.Exclude(Info, "qux foo: bar"))
+		assertTrue(t, ebp.Exclude(Info, "foo: rocks"))
+		assertFalse(t, ebp.Exclude(Info, "foo"))
+		assertFalse(t, ebp.Exclude(Info, "qux foo: bar"))
 	})
 
 	t.Run("exclude by regexp", func(t *testing.T) {
@@ -33,11 +31,11 @@ func TestExclude(t *testing.T) {
 			Regexp: regexp.MustCompile("(foo|bar)"),
 		}
 
-		assert.True(t, ebr.Exclude(Info, "foo"))
-		assert.True(t, ebr.Exclude(Info, "bar"))
-		assert.True(t, ebr.Exclude(Info, "foo qux"))
-		assert.True(t, ebr.Exclude(Info, "qux bar"))
-		assert.False(t, ebr.Exclude(Info, "qux"))
+		assertTrue(t, ebr.Exclude(Info, "foo"))
+		assertTrue(t, ebr.Exclude(Info, "bar"))
+		assertTrue(t, ebr.Exclude(Info, "foo qux"))
+		assertTrue(t, ebr.Exclude(Info, "qux bar"))
+		assertFalse(t, ebr.Exclude(Info, "qux"))
 	})
 
 	t.Run("excludes many funcs", func(t *testing.T) {
@@ -46,10 +44,10 @@ func TestExclude(t *testing.T) {
 			ExcludeByPrefix("bar: ").Exclude,
 		}
 
-		assert.True(t, ef.Exclude(Info, "foo: rocks"))
-		assert.True(t, ef.Exclude(Info, "bar: rocks"))
-		assert.False(t, ef.Exclude(Info, "foo"))
-		assert.False(t, ef.Exclude(Info, "qux foo: bar"))
+		assertTrue(t, ef.Exclude(Info, "foo: rocks"))
+		assertTrue(t, ef.Exclude(Info, "bar: rocks"))
+		assertFalse(t, ef.Exclude(Info, "foo"))
+		assertFalse(t, ef.Exclude(Info, "qux foo: bar"))
 
 	})
 }
