@@ -160,7 +160,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 }
 
 // offsetIntLogger is the stack frame offset in the call stack for the caller to
-// one of the Warn,Info,Log,etc methods.
+// one of the Warn, Info, Log, etc methods.
 const offsetIntLogger = 3
 
 // Log a message and a set of key/value pairs if the given level is at
