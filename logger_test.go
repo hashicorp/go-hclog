@@ -1004,6 +1004,24 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, errJsonUnsupportedTypeMsg, raw["@warn"])
 	})
+
+	t.Run("omits the entry for the message when empty", func(t *testing.T) {
+		var buf bytes.Buffer
+		DefaultOutput = &buf
+
+		logger := New(&LoggerOptions{
+			Name: "test",
+		})
+
+		logger.Info("", "who", "programmer", "why", "testing")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  test: who=programmer why=testing\n", rest)
+	})
+
 }
 
 type customErrJSON struct {
