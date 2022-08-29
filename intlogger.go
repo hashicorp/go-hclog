@@ -48,6 +48,9 @@ var (
 		Warn:  color.New(color.FgHiYellow),
 		Error: color.New(color.FgHiRed),
 	}
+
+	faintBoldColor = color.New(color.Faint, color.Bold)
+	faintColor     = color.New(color.Faint)
 )
 
 // Make sure that intLogger is a Logger
