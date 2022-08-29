@@ -53,8 +53,9 @@ var (
 		Error: color.New(color.FgHiRed),
 	}
 
-	faintBoldColor = color.New(color.Faint, color.Bold)
-	faintColor     = color.New(color.Faint)
+	faintBoldColor       = color.New(color.Faint, color.Bold)
+	faintColor           = color.New(color.Faint)
+	faintMultiLinePrefix = faintColor.Sprint(multiLinePrefix)
 )
 
 // Make sure that intLogger is a Logger
@@ -407,7 +408,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
 					l.writer.WriteString(faintColor.Sprint("=\n"))
-					writeIndent(l.writer, val, faintColor.Sprint(multiLinePrefix))
+					writeIndent(l.writer, val, faintMultiLinePrefix)
 				} else {
 					l.writer.WriteString("=\n")
 					writeIndent(l.writer, val, multiLinePrefix)
