@@ -263,11 +263,10 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 
 	s, ok := _levelToBracket[level]
 	if ok {
-		switch {
-		case l.headerColor != ColorOff:
+		if l.headerColor != ColorOff {
 			color := _levelToColor[level]
 			color.Fprint(l.writer, s)
-		default:
+		} else {
 			l.writer.WriteString(s)
 		}
 	} else {
@@ -397,8 +396,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			// Values may also neeq quoting, if not all the runes
 			// in the value string are "normal", like if they
 			// contain ANSI escape sequences.
-			switch {
-			case strings.Contains(val, "\n"):
+			if strings.Contains(val, "\n") {
 				key = "\n  " + key
 
 				valStrBuilder := &strings.Builder{}
@@ -417,7 +415,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				valStrBuilder.WriteString("  ")
 
 				val = valStrBuilder.String()
-			case !raw && needsQuoting(val):
+			} else if !raw && needsQuoting(val) {
 				val = strconv.Quote(val)
 			}
 
