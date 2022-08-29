@@ -32,6 +32,10 @@ const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
 
+// multiLinePrefix is used for fields that contain multi-line values
+// when using non-JSON logging.
+const multiLinePrefix = "  | "
+
 var (
 	_levelToBracket = map[Level]string{
 		Debug: "[DEBUG]",
@@ -401,22 +405,31 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			if strings.Contains(val, "\n") {
 				l.writer.WriteString("\n  ")
 				l.writer.WriteString(key)
-				l.writer.WriteString("=\n")
 				if l.fieldColor != ColorOff {
-					writeIndent(l.writer, val, faintColor.Sprint("  | "))
+					l.writer.WriteString(faintColor.Sprint("=\n"))
+					writeIndent(l.writer, val, faintColor.Sprint(multiLinePrefix))
 				} else {
-					writeIndent(l.writer, val, "  | ")
+					l.writer.WriteString("=\n")
+					writeIndent(l.writer, val, multiLinePrefix)
 				}
 				l.writer.WriteString("  ")
 			} else if !raw && needsQuoting(val) {
 				l.writer.WriteByte(' ')
 				l.writer.WriteString(key)
-				l.writer.WriteByte('=')
+				if l.fieldColor != ColorOff {
+					l.writer.WriteString(faintColor.Sprint("="))
+				} else {
+					l.writer.WriteByte('=')
+				}
 				l.writer.WriteString(strconv.Quote(val))
 			} else {
 				l.writer.WriteByte(' ')
 				l.writer.WriteString(key)
-				l.writer.WriteByte('=')
+				if l.fieldColor != ColorOff {
+					l.writer.WriteString(faintColor.Sprint("="))
+				} else {
+					l.writer.WriteByte('=')
+				}
 				l.writer.WriteString(val)
 			}
 		}
