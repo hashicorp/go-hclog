@@ -32,10 +32,6 @@ const TimeFormatJSON = "2006-01-02T15:04:05.000000Z07:00"
 // errJsonUnsupportedTypeMsg is included in log json entries, if an arg cannot be serialized to json
 const errJsonUnsupportedTypeMsg = "logging contained values that don't serialize to json"
 
-// multiLinePrefix is used for fields that contain multi-line values
-// when using non-JSON logging.
-const multiLinePrefix = "  | "
-
 var (
 	_levelToBracket = map[Level]string{
 		Debug: "[DEBUG]",
@@ -53,9 +49,11 @@ var (
 		Error: color.New(color.FgHiRed),
 	}
 
-	faintBoldColor       = color.New(color.Faint, color.Bold)
-	faintColor           = color.New(color.Faint)
-	faintMultiLinePrefix = faintColor.Sprint(multiLinePrefix)
+	faintBoldColor                 = color.New(color.Faint, color.Bold)
+	faintColor                     = color.New(color.Faint)
+	faintMultiLinePrefix           = faintColor.Sprint("  | ")
+	faintFieldSeparator            = faintColor.Sprint("=")
+	faintFieldSeparatorWithNewLine = faintColor.Sprint("=\n")
 )
 
 // Make sure that intLogger is a Logger
@@ -407,18 +405,18 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				l.writer.WriteString("\n  ")
 				l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					l.writer.WriteString(faintColor.Sprint("=\n"))
+					l.writer.WriteString(faintFieldSeparatorWithNewLine)
 					writeIndent(l.writer, val, faintMultiLinePrefix)
 				} else {
 					l.writer.WriteString("=\n")
-					writeIndent(l.writer, val, multiLinePrefix)
+					writeIndent(l.writer, val, "  | ")
 				}
 				l.writer.WriteString("  ")
 			} else if !raw && needsQuoting(val) {
 				l.writer.WriteByte(' ')
 				l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					l.writer.WriteString(faintColor.Sprint("="))
+					l.writer.WriteString(faintFieldSeparator)
 				} else {
 					l.writer.WriteByte('=')
 				}
@@ -427,7 +425,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				l.writer.WriteByte(' ')
 				l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					l.writer.WriteString(faintColor.Sprint("="))
+					l.writer.WriteString(faintFieldSeparator)
 				} else {
 					l.writer.WriteByte('=')
 				}
