@@ -385,60 +385,40 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 				key = fmt.Sprintf("%s", st)
 			}
 
-			// Optionally apply the ANSI "dim" (faint) and "bold"
+			// Optionally apply the ANSI "faint" and "bold"
 			// SGR values to the key.
 			if l.fieldColor != ColorOff {
-				color := color.New(color.Faint, color.Bold)
-				key = color.Sprint(key)
+				key = faintBoldColor.Sprint(key)
 			}
 
 			// Values may contain multiple lines, and that format
 			// is preserved, with each line prefixed with a "  | "
 			// to show it's part of a collection of lines.
 			//
-			// Values may also neeq quoting, if not all the runes
+			// Values may also need quoting, if not all the runes
 			// in the value string are "normal", like if they
 			// contain ANSI escape sequences.
 			if strings.Contains(val, "\n") {
-				key = "\n  " + key
-
-				valStrBuilder := &strings.Builder{}
-				valStrWriter := newWriter(valStrBuilder, ColorOff)
-
-				valStrBuilder.WriteString("\n")
-
+				l.writer.WriteString("\n  ")
+				l.writer.WriteString(key)
+				l.writer.WriteString("=\n")
 				if l.fieldColor != ColorOff {
-					color := color.New(color.Faint)
-					writeIndent(valStrWriter, val, color.Sprint("  | "))
+					writeIndent(l.writer, val, faintColor.Sprint("  | "))
 				} else {
-					writeIndent(valStrWriter, val, "  | ")
+					writeIndent(l.writer, val, "  | ")
 				}
-				valStrWriter.Flush(level)
-
-				valStrBuilder.WriteString("  ")
-
-				val = valStrBuilder.String()
+				l.writer.WriteString("  ")
 			} else if !raw && needsQuoting(val) {
-				val = strconv.Quote(val)
-			}
-
-			// If the key contains a newline, because the value itself
-			// contains newlines, then we pad with an extra space.
-			if !strings.Contains(key, "\n") {
 				l.writer.WriteByte(' ')
-			}
-			l.writer.WriteString(key)
-
-			if l.fieldColor != ColorOff {
-				faintColor := color.New(color.Faint)
-				faintColor.Fprint(l.writer, "=")
-				resetColor := color.New(color.Reset)
-				resetColor.Fprint(l.writer, "")
-			} else {
+				l.writer.WriteString(key)
 				l.writer.WriteByte('=')
+				l.writer.WriteString(strconv.Quote(val))
+			} else {
+				l.writer.WriteByte(' ')
+				l.writer.WriteString(key)
+				l.writer.WriteByte('=')
+				l.writer.WriteString(val)
 			}
-
-			l.writer.WriteString(val)
 		}
 	}
 
