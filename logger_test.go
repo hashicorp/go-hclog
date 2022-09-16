@@ -176,6 +176,28 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, expected, rest)
 	})
 
+	t.Run("handles backslash r in entries", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("this is test", "who", "programmer", "why", "testing\n\rand other\n\rpretty cool things like \x01 and \u1680 and \U00101120")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		expected := `[INFO]  test: this is test: who=programmer
+  why=
+  | testing
+  | \rand other
+  | \rpretty cool things like \x01 and \u1680 and \U00101120` + "\n  \n"
+		assert.Equal(t, expected, rest)
+	})
+
 	t.Run("outputs stack traces", func(t *testing.T) {
 		var buf bytes.Buffer
 
