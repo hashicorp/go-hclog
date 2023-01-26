@@ -89,6 +89,13 @@ const (
 	ForceColor
 )
 
+// SupportsColor is an optional interface that can be implemented by the output
+// value. If implemented and SupportsColor() returns true, then AutoColor will
+// enable colorization.
+type SupportsColor interface {
+	SupportsColor() bool
+}
+
 // LevelFromString returns a Level type for the named log level, or "NoLevel" if
 // the level string is invalid. This facilitates setting the log level via
 // config or environment variable by name in a predictable way.

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"sort"
@@ -874,16 +873,6 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 		inferLevelsWithTimestamp: opts.InferLevelsWithTimestamp,
 		forceLevel:               opts.ForceLevel,
 	}
-}
-
-// checks if the underlying io.Writer is a file, and
-// panics if not. For use by colorization.
-func (l *intLogger) checkWriterIsFile() *os.File {
-	fi, ok := l.writer.w.(*os.File)
-	if !ok {
-		panic("Cannot enable coloring of non-file Writers")
-	}
-	return fi
 }
 
 // Accept implements the SinkAdapter interface
