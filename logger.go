@@ -299,6 +299,13 @@ type LoggerOptions struct {
 	// logger will not affect any subloggers, and SetLevel on any subloggers
 	// will not affect the parent or sibling loggers.
 	IndependentLevels bool
+
+	// SubloggerHook registers a function that is called when a sublogger via
+	// Named, With, or ResetNamed is created. If defined, the function is passed
+	// the newly created Logger and the returned Logger is returned from the
+	// original function. This option allows customization via interception and
+	/// wrapping of Logger instances.
+	SubloggerHook func(sub Logger) Logger
 }
 
 // InterceptLogger describes the interface for using a logger
