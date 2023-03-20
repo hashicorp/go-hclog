@@ -304,7 +304,7 @@ type LoggerOptions struct {
 	// Named, With, or ResetNamed is created. If defined, the function is passed
 	// the newly created Logger and the returned Logger is returned from the
 	// original function. This option allows customization via interception and
-	/// wrapping of Logger instances.
+	// wrapping of Logger instances.
 	SubloggerHook func(sub Logger) Logger
 }
 
