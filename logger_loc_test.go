@@ -2,6 +2,8 @@ package hclog
 
 import (
 	"bytes"
+	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -22,14 +24,19 @@ func TestLoggerLoc(t *testing.T) {
 			IncludeLocation: true,
 		})
 
+		_, _, line, _ := runtime.Caller(0)
+
 		logger.Info("this is test", "who", "programmer", "why", "testing is fun")
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_loc_test.go:25: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t,
+			fmt.Sprintf(
+				"[INFO]  go-hclog/logger_loc_test.go:%d: test: this is test: who=programmer why=\"testing is fun\"\n",
+				line+2),
+			rest)
 	})
 
 	t.Run("includes the caller location excluding helper functions", func(t *testing.T) {
@@ -46,14 +53,20 @@ func TestLoggerLoc(t *testing.T) {
 			AdditionalLocationOffset: 1,
 		})
 
+		_, _, line, _ := runtime.Caller(0)
+
 		logMe(logger)
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		// This test will break if you move this around, it's line dependent, just fyi
-		assert.Equal(t, "[INFO]  go-hclog/logger_loc_test.go:49: test: this is test: who=programmer why=\"testing is fun\"\n", rest)
+		assert.Equal(t,
+			fmt.Sprintf(
+				"[INFO]  go-hclog/logger_loc_test.go:%d: test: this is test: who=programmer why=\"testing is fun\"\n",
+				line+2,
+			),
+			rest)
 	})
 
 }
