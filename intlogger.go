@@ -85,6 +85,8 @@ type intLogger struct {
 
 	// create subloggers with their own level setting
 	independentLevels bool
+
+	subloggerHook func(sub Logger) Logger
 }
 
 // New returns a configured logger.
@@ -151,6 +153,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		independentLevels: opts.IndependentLevels,
 		headerColor:       headerColor,
 		fieldColor:        fieldColor,
+		subloggerHook:     opts.SubloggerHook,
 	}
 	if opts.IncludeLocation {
 		l.callerOffset = offsetIntLogger + opts.AdditionalLocationOffset
@@ -166,11 +169,19 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		l.timeFormat = opts.TimeFormat
 	}
 
+	if l.subloggerHook == nil {
+		l.subloggerHook = identityHook
+	}
+
 	l.setColorization(opts)
 
 	atomic.StoreInt32(l.level, int32(level))
 
 	return l
+}
+
+func identityHook(logger Logger) Logger {
+	return logger
 }
 
 // offsetIntLogger is the stack frame offset in the call stack for the caller to
@@ -774,7 +785,7 @@ func (l *intLogger) With(args ...interface{}) Logger {
 		sl.implied = append(sl.implied, MissingKey, extra)
 	}
 
-	return sl
+	return l.subloggerHook(sl)
 }
 
 // Create a new sub-Logger that a name decending from the current name.
@@ -788,7 +799,7 @@ func (l *intLogger) Named(name string) Logger {
 		sl.name = name
 	}
 
-	return sl
+	return l.subloggerHook(sl)
 }
 
 // Create a new sub-Logger with an explicit name. This ignores the current
@@ -799,7 +810,7 @@ func (l *intLogger) ResetNamed(name string) Logger {
 
 	sl.name = name
 
-	return sl
+	return l.subloggerHook(sl)
 }
 
 func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
