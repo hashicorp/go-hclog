@@ -98,8 +98,10 @@ func (h *Handler) processGroup(prefix string, a slog.Attr) []any {
 }
 
 func (h *Handler) processAttr(pos int, prefix string, a slog.Attr) []any {
+	val := a.Value.Resolve()
+
 	var attrs []any
-	if a.Value.Kind() == slog.KindGroup {
+	if val.Kind() == slog.KindGroup {
 		attrs = append(attrs, h.processGroup(prefix, a)...)
 	} else {
 		key := a.Key
@@ -113,7 +115,7 @@ func (h *Handler) processAttr(pos int, prefix string, a slog.Attr) []any {
 			key = strconv.Itoa(pos)
 		}
 
-		attrs = append(attrs, prefix+key, a.Value.Any())
+		attrs = append(attrs, prefix+key, val.Any())
 	}
 
 	return attrs
