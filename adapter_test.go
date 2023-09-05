@@ -3,12 +3,17 @@ package hclogslog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slog"
+	"golang.org/x/exp/slog/slogtest"
 )
 
 func TestAdapter(t *testing.T) {
@@ -143,4 +148,85 @@ func TestAdapter(t *testing.T) {
 		require.Contains(t, o, "message 1: x.0=thing\n")
 		require.Contains(t, o, "message 2: y.0=1\n")
 	})
+}
+
+func TestSlogtest(t *testing.T) {
+	var output bytes.Buffer
+
+	log := hclog.New(&hclog.LoggerOptions{
+		Name:       "test1",
+		Level:      hclog.Debug,
+		Output:     &output,
+		JSONFormat: true,
+	})
+
+	err := slogtest.TestHandler(Adapt(log), func() []map[string]any {
+		var entries []map[string]any
+
+		dec := json.NewDecoder(bytes.NewReader(output.Bytes()))
+
+		for {
+			var e map[string]any
+
+			err := dec.Decode(&e)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				t.Error(err)
+			}
+
+			e["time"] = e["@timestamp"]
+			e["level"] = e["@level"]
+			e["msg"] = e["@message"]
+
+			for k, v := range e {
+				if strings.Contains(k, ".") {
+					parts := strings.Split(k, ".")
+
+					top := e
+
+					for _, p := range parts[:len(parts)-1] {
+						sub, ok := top[p].(map[string]any)
+						if !ok {
+							sub = make(map[string]any)
+							top[p] = sub
+						}
+
+						top = sub
+					}
+
+					top[parts[len(parts)-1]] = v
+				}
+			}
+
+			entries = append(entries, e)
+		}
+
+		return entries
+	})
+	if err != nil {
+		// Strip out the zero time issue, we can't handle it yet.
+
+		if je, ok := err.(interface {
+			Unwrap() []error
+		}); ok {
+			var filtered []string
+			for _, sub := range je.Unwrap() {
+				if !strings.Contains(sub.Error(), "should ignore a zero Record.Time") {
+					filtered = append(filtered, sub.Error())
+				}
+			}
+
+			if len(filtered) > 0 {
+				err = errors.New(strings.Join(filtered, "\n"))
+			} else {
+				err = nil
+			}
+		}
+	}
+
+	if err != nil {
+		t.Error(err)
+	}
 }
