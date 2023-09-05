@@ -2,6 +2,7 @@ package hclogslog
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/hashicorp/go-hclog"
 	"golang.org/x/exp/slog"
@@ -67,6 +68,57 @@ func (h *Handler) translateLevel(lvl slog.Level) hclog.Level {
 	}
 }
 
+// processGroup walks through a Group and emits the total
+// hclog attributes to be emitted. This is called recursive in the chance
+// that there is a group in a group.
+func (h *Handler) processGroup(prefix string, a slog.Attr) []any {
+	var attrs []any
+
+	// If it's a group without a name, then ignore the group and process
+	// it like normal non-grouped attributes.
+	if a.Key == "" {
+		for _, subA := range a.Value.Group() {
+			if subA.Value.Kind() == slog.KindGroup {
+
+			} else {
+				attrs = append(attrs, prefix+subA.Key, subA.Value.Any())
+			}
+		}
+
+		return attrs
+	}
+
+	prefix = prefix + a.Key + "."
+
+	for i, subA := range a.Value.Group() {
+		attrs = append(attrs, h.processAttr(i, prefix, subA)...)
+	}
+
+	return attrs
+}
+
+func (h *Handler) processAttr(pos int, prefix string, a slog.Attr) []any {
+	var attrs []any
+	if a.Value.Kind() == slog.KindGroup {
+		attrs = append(attrs, h.processGroup(prefix, a)...)
+	} else {
+		key := a.Key
+		if key == "" {
+			if a.Value.Equal(slog.Value{}) {
+				return nil
+			}
+
+			// If the key is empty but there is a value, then make the key
+			// the position of the attributes in the record.
+			key = strconv.Itoa(pos)
+		}
+
+		attrs = append(attrs, prefix+key, a.Value.Any())
+	}
+
+	return attrs
+}
+
 // Handle handles the Record.
 // It will only be called when Enabled returns true.
 // The Context argument is as for Enabled.
@@ -87,14 +139,11 @@ func (h *Handler) translateLevel(lvl slog.Level) hclog.Level {
 func (h *Handler) Handle(_ context.Context, rec slog.Record) error {
 	attrs := make([]any, 0, rec.NumAttrs()*2)
 
+	var cnt int
+
 	rec.Attrs(func(a slog.Attr) bool {
-		if a.Value.Kind() == slog.KindGroup {
-			for _, subA := range a.Value.Group() {
-				attrs = append(attrs, h.prefix+a.Key+"."+subA.Key, subA.Value.Any())
-			}
-		} else {
-			attrs = append(attrs, h.prefix+a.Key, a.Value.Any())
-		}
+		attrs = append(attrs, h.processAttr(cnt, h.prefix, a)...)
+		cnt++
 		return true
 	})
 
@@ -106,21 +155,15 @@ func (h *Handler) Handle(_ context.Context, rec slog.Record) error {
 // both the receiver's attributes and the arguments.
 // The Handler owns the slice: it may retain, modify or discard it.
 
-func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	args := make([]any, 0, len(attrs))
+func (h *Handler) WithAttrs(slogAttrs []slog.Attr) slog.Handler {
+	attrs := make([]any, 0, len(slogAttrs))
 
-	for _, a := range attrs {
-		if a.Value.Kind() == slog.KindGroup {
-			for _, subA := range a.Value.Group() {
-				args = append(args, h.prefix+a.Key+"."+subA.Key, subA.Value.Any())
-			}
-		} else {
-			args = append(args, h.prefix+a.Key, a.Value.Any())
-		}
+	for i, a := range slogAttrs {
+		attrs = append(attrs, h.processAttr(i, h.prefix, a)...)
 	}
 
 	return &Handler{
-		l:      h.l.With(args...),
+		l:      h.l.With(attrs...),
 		prefix: h.prefix,
 	}
 }
@@ -145,9 +188,15 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 //
 // If the name is empty, WithGroup returns the receiver.
 func (h *Handler) WithGroup(name string) slog.Handler {
+	prefix := h.prefix
+
+	if name != "" {
+		prefix = h.prefix + name + "."
+	}
+
 	return &Handler{
 		l:      h.l,
-		prefix: name + ".",
+		prefix: prefix,
 	}
 }
 

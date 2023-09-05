@@ -71,4 +71,76 @@ func TestAdapter(t *testing.T) {
 		require.Contains(t, o, "message 1: x.a=thing\n")
 		require.Contains(t, o, "message 2: y.z=1\n")
 	})
+
+	t.Run("translates nested groups", func(t *testing.T) {
+		var output bytes.Buffer
+
+		log := hclog.New(&hclog.LoggerOptions{
+			Name:   "test1",
+			Level:  hclog.Debug,
+			Output: &output,
+		})
+
+		logger := slog.New(Adapt(log))
+
+		ctx := context.Background()
+
+		logger.LogAttrs(ctx, slog.LevelInfo, "message 1",
+			slog.Group("x", slog.Group("n", slog.String("a", "thing"))))
+
+		logger.WithGroup("y").Warn("message 2", "z", 1)
+
+		o := output.String()
+
+		require.Contains(t, o, "message 1: x.n.a=thing\n")
+		require.Contains(t, o, "message 2: y.z=1\n")
+	})
+
+	t.Run("handles groups with no name", func(t *testing.T) {
+		var output bytes.Buffer
+
+		log := hclog.New(&hclog.LoggerOptions{
+			Name:   "test1",
+			Level:  hclog.Debug,
+			Output: &output,
+		})
+
+		logger := slog.New(Adapt(log))
+
+		ctx := context.Background()
+
+		logger.LogAttrs(ctx, slog.LevelInfo, "message 1",
+			slog.Group("", slog.String("a", "thing")))
+
+		logger.WithGroup("").Warn("message 2", "z", 1)
+
+		o := output.String()
+
+		require.Contains(t, o, "message 1: a=thing\n")
+		require.Contains(t, o, "message 2: z=1\n")
+	})
+
+	t.Run("handles attrs in a group with no name", func(t *testing.T) {
+		var output bytes.Buffer
+
+		log := hclog.New(&hclog.LoggerOptions{
+			Name:   "test1",
+			Level:  hclog.Debug,
+			Output: &output,
+		})
+
+		logger := slog.New(Adapt(log))
+
+		ctx := context.Background()
+
+		logger.LogAttrs(ctx, slog.LevelInfo, "message 1",
+			slog.Group("x", slog.String("", "thing")))
+
+		logger.WithGroup("y").Warn("message 2", "", 1)
+
+		o := output.String()
+
+		require.Contains(t, o, "message 1: x.0=thing\n")
+		require.Contains(t, o, "message 2: y.0=1\n")
+	})
 }
