@@ -389,9 +389,10 @@ func TestLogger(t *testing.T) {
 		var buf bytes.Buffer
 
 		rootLogger := New(&LoggerOptions{
-			Name:   "with_test",
-			Output: &buf,
-			Level:  Warn,
+			Name:            "with_test",
+			Output:          &buf,
+			Level:           Warn,
+			InheritedLevels: true,
 		})
 
 		// Build the root logger in two steps, which triggers a slice capacity increase
@@ -456,7 +457,7 @@ func TestLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0o755), "bits", Binary(5))
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
@@ -894,7 +895,7 @@ func TestLogger_JSON(t *testing.T) {
 			JSONFormat: true,
 		})
 
-		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0o755), "bits", Binary(5))
 
 		b := buf.Bytes()
 
@@ -905,7 +906,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, float64(12), raw["bytes"])
-		assert.Equal(t, float64(0755), raw["perms"])
+		assert.Equal(t, float64(0o755), raw["perms"])
 		assert.Equal(t, float64(5), raw["bits"])
 	})
 
@@ -1046,7 +1047,6 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "[INFO]  test: who=programmer why=testing\n", rest)
 	})
-
 }
 
 type customErrJSON struct {

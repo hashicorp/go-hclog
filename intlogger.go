@@ -75,9 +75,11 @@ type intLogger struct {
 
 	// This is an interface so that it's shared by any derived loggers, since
 	// those derived loggers share the bufio.Writer as well.
-	mutex  Locker
-	writer *writer
-	level  *int32
+	mutex           Locker
+	writer          *writer
+	level           *int32
+	subloggerLevels []*int32
+	parentLogger    Logger
 
 	headerColor ColorOption
 	fieldColor  ColorOption
@@ -88,6 +90,9 @@ type intLogger struct {
 
 	// create subloggers with their own level setting
 	independentLevels bool
+
+	// create subloggers with levels inherited from parents
+	inheritedLevels bool
 
 	subloggerHook func(sub Logger) Logger
 }
@@ -152,8 +157,11 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		mutex:             mutex,
 		writer:            newWriter(output, primaryColor),
 		level:             new(int32),
+		parentLogger:      nil,
+		subloggerLevels:   make([]*int32, 0),
 		exclude:           opts.Exclude,
 		independentLevels: opts.IndependentLevels,
+		inheritedLevels:   opts.InheritedLevels,
 		headerColor:       headerColor,
 		fieldColor:        fieldColor,
 		subloggerHook:     opts.SubloggerHook,
@@ -275,7 +283,6 @@ func needsQuoting(str string) bool {
 //  3. Color only the header (level) part of the log line.
 //  4. Color both the header and fields of the log line.
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
-
 	if !l.disableTime {
 		l.writer.WriteString(t.Format(l.timeFormat))
 		l.writer.WriteByte(' ')
@@ -805,6 +812,16 @@ func (l *intLogger) Named(name string) Logger {
 	return l.subloggerHook(sl)
 }
 
+func (l *intLogger) appendSubloggerLevelToParent(level *int32) {
+	parent, ok := l.parentLogger.(*intLogger)
+	if !ok {
+		return
+	}
+
+	parent.subloggerLevels = append(parent.subloggerLevels, level)
+	parent.appendSubloggerLevelToParent(level)
+}
+
 // Create a new sub-Logger with an explicit name. This ignores the current
 // name. This is used to create a standalone logger that doesn't fall
 // within the normal hierarchy.
@@ -855,6 +872,11 @@ func (l *intLogger) resetOutput(opts *LoggerOptions) error {
 // well.
 func (l *intLogger) SetLevel(level Level) {
 	atomic.StoreInt32(l.level, int32(level))
+	if l.inheritedLevels {
+		for _, sl := range l.subloggerLevels {
+			atomic.StoreInt32(sl, int32(level))
+		}
+	}
 }
 
 // Returns the current level
@@ -912,6 +934,15 @@ func (l *intLogger) copy() *intLogger {
 	if l.independentLevels {
 		sl.level = new(int32)
 		*sl.level = *l.level
+	} else if l.inheritedLevels {
+		sl.level = new(int32)
+		*sl.level = *l.level
+
+		l.subloggerLevels = append(l.subloggerLevels, sl.level)
+		l.appendSubloggerLevelToParent(sl.level)
+
+		sl.subloggerLevels = make([]*int32, 0)
+		sl.parentLogger = l
 	}
 
 	return &sl

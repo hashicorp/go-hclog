@@ -40,7 +40,6 @@ func TestInterceptLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		assert.Equal(t, "[DEBUG] test log: who=programmer\n", rest)
-
 	})
 
 	t.Run("sink includes with arguments", func(t *testing.T) {
@@ -216,9 +215,10 @@ func TestInterceptLogger(t *testing.T) {
 		var sbuf bytes.Buffer
 
 		intercept := NewInterceptLogger(&LoggerOptions{
-			Name:   "with_test",
-			Level:  Debug,
-			Output: &buf,
+			Name:            "with_test",
+			Level:           Debug,
+			Output:          &buf,
+			InheritedLevels: true,
 		})
 
 		sink := NewSinkAdapter(&LoggerOptions{
@@ -231,6 +231,8 @@ func TestInterceptLogger(t *testing.T) {
 		named := intercept.Named("sub_logger")
 		named = named.With("parent", "logger")
 		subNamed := named.Named("http")
+		siblingNamed := named.Named("sibling")
+		leafNamed := subNamed.Named("leaf")
 
 		subNamed.Debug("test1", "path", "/some/test/path", "args", []string{"test", "test"})
 
@@ -238,6 +240,83 @@ func TestInterceptLogger(t *testing.T) {
 		dataIdx := strings.IndexByte(output, ' ')
 		rest := output[dataIdx+1:]
 		assert.Equal(t, "[DEBUG] with_test.sub_logger.http: test1: parent=logger path=/some/test/path args=[\"test\", \"test\"]\n", rest)
+
+		intercept.SetLevel(Warn)
+		named.SetLevel(Info)
+		subNamed.SetLevel(Trace)
+		leafNamed.SetLevel(Debug)
+
+		buf.Reset()
+		fmt.Println("test the parent logger -- should only log at Warn!")
+		intercept.Log(Warn, "test parent")
+		intercept.Log(Info, "test parent")
+		intercept.Log(Trace, "test parent")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		fmt.Println("test the named logger -- should log at Info and Warn!")
+		named.Log(Warn, "test named")
+		named.Log(Info, "test named")
+		named.Log(Trace, "test named")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		fmt.Println("test the siblingNamed logger after changing the named -- should log at Info and Warn!")
+		siblingNamed.Log(Warn, "test subNamed")
+		siblingNamed.Log(Info, "test subNamed")
+		siblingNamed.Log(Trace, "test subNamed")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		fmt.Println("test the subNamed logger -- should log at all levels!")
+		subNamed.Log(Warn, "test subNamed")
+		subNamed.Log(Info, "test subNamed")
+		subNamed.Log(Trace, "test subNamed")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		intercept.SetLevel(Warn)
+		fmt.Println("test the subNamed logger after changing the root -- should log at Warn!")
+		subNamed.Log(Warn, "test subNamed")
+		subNamed.Log(Info, "test subNamed")
+		subNamed.Log(Trace, "test subNamed")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		named.SetLevel(Warn)
+		fmt.Println("test the subNamed logger after changing the named -- should log at Warn!")
+		subNamed.Log(Warn, "test subNamed")
+		subNamed.Log(Info, "test subNamed")
+		subNamed.Log(Trace, "test subNamed")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
+
+		buf.Reset()
+		fmt.Println("test the leafNamed logger after changing the named -- should log at Warn!")
+		leafNamed.Log(Warn, "test subNamed")
+		leafNamed.Log(Info, "test subNamed")
+		leafNamed.Log(Trace, "test subNamed")
+		output = buf.String()
+		dataIdx = strings.IndexByte(output, ' ')
+		rest = output[dataIdx+1:]
+		fmt.Println(rest)
 	})
 
 	t.Run("derived standard loggers send output to sinks", func(t *testing.T) {

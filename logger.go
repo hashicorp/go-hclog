@@ -303,6 +303,12 @@ type LoggerOptions struct {
 	// will not affect the parent or sibling loggers.
 	IndependentLevels bool
 
+	// InheritedLevels isolates a parent's logging level from its child
+	// subloggers. This means that using SetLevel on a sublogger
+	// will not affect the parent or sibling loggers, but will
+	// continue to affect any child subloggers.
+	InheritedLevels bool
+
 	// SubloggerHook registers a function that is called when a sublogger via
 	// Named, With, or ResetNamed is created. If defined, the function is passed
 	// the newly created Logger and the returned Logger is returned from the
