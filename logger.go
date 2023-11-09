@@ -303,6 +303,24 @@ type LoggerOptions struct {
 	// will not affect the parent or sibling loggers.
 	IndependentLevels bool
 
+	// When set, changing the level of a logger effects only it's direct sub-loggers
+	// rather than all sub-loggers. For example:
+	// a := logger.Named("a")
+	// a.SetLevel(Error)
+	// b := a.Named("b")
+	// c := a.Named("c")
+	// b.GetLevel() => Error
+	// c.GetLevel() => Error
+	// b.SetLevel(Info)
+	// a.GetLevel() => Error
+	// b.GetLevel() => Info
+	// c.GetLevel() => Error
+	// a.SetLevel(Warn)
+	// a.GetLevel() => Warn
+	// b.GetLevel() => Warn
+	// c.GetLevel() => Warn
+	SyncParentLevel bool
+
 	// SubloggerHook registers a function that is called when a sublogger via
 	// Named, With, or ResetNamed is created. If defined, the function is passed
 	// the newly created Logger and the returned Logger is returned from the
