@@ -80,11 +80,11 @@ type intLogger struct {
 	level  *int32
 
 	// The value of curEpoch the last time we performed the level sync process
-	ownEpoch int32
+	ownEpoch uint64
 
 	// Shared amongst all the loggers created in this hierachy, used to determine
 	// if the level sync process should be run by comparing it with ownEpoch
-	curEpoch *int32
+	curEpoch *uint64
 
 	//The logger this one was created from. Only set when syncParentLevel is set
 	parent *intLogger
@@ -163,7 +163,7 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		mutex:             mutex,
 		writer:            newWriter(output, primaryColor),
 		level:             new(int32),
-		curEpoch:          new(int32),
+		curEpoch:          new(uint64),
 		exclude:           opts.Exclude,
 		independentLevels: opts.IndependentLevels,
 		syncParentLevel:   opts.SyncParentLevel,
@@ -877,7 +877,7 @@ func (l *intLogger) SetLevel(level Level) {
 
 	l.level = nsl
 
-	l.ownEpoch = atomic.AddInt32(l.curEpoch, 1)
+	l.ownEpoch = atomic.AddUint64(l.curEpoch, 1)
 }
 
 func (l *intLogger) searchLevelPtr() *int32 {
@@ -906,7 +906,7 @@ func (l *intLogger) GetLevel() Level {
 	// the comparison returns the already loaded value. The comparison is almost
 	// always true, so the branch predictor should hit consistently with it.
 	var (
-		curEpoch = atomic.LoadInt32(l.curEpoch)
+		curEpoch = atomic.LoadUint64(l.curEpoch)
 		level    = Level(atomic.LoadInt32(l.level))
 		own      = l.ownEpoch
 	)
