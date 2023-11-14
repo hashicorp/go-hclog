@@ -86,7 +86,7 @@ type intLogger struct {
 	// if the level sync process should be run by comparing it with ownEpoch
 	curEpoch *uint64
 
-	//The logger this one was created from. Only set when syncParentLevel is set
+	// The logger this one was created from. Only set when syncParentLevel is set
 	parent *intLogger
 
 	headerColor ColorOption
