@@ -233,6 +233,7 @@ type StandardLoggerOptions struct {
 	// [DEBUG] and strip it off before reapplying it.
 	// The timestamp detection may result in false positives and incomplete
 	// string outputs.
+	// InferLevelsWithTimestamp is only relevant if InferLevels is true.
 	InferLevelsWithTimestamp bool
 
 	// ForceLevel is used to force all output from the standard logger to be at
