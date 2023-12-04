@@ -55,10 +55,24 @@ var (
 
 	faintBoldColor                 = color.New(color.Faint, color.Bold)
 	faintColor                     = color.New(color.Faint)
-	faintMultiLinePrefix           = faintColor.Sprint("  | ")
-	faintFieldSeparator            = faintColor.Sprint("=")
-	faintFieldSeparatorWithNewLine = faintColor.Sprint("=\n")
+	faintMultiLinePrefix           string
+	faintFieldSeparator            string
+	faintFieldSeparatorWithNewLine string
 )
+
+func init() {
+	// Force all the colors to enabled because we do our own detection of color usage.
+	for _, c := range _levelToColor {
+		c.EnableColor()
+	}
+
+	faintBoldColor.EnableColor()
+	faintColor.EnableColor()
+
+	faintMultiLinePrefix = faintColor.Sprint("  | ")
+	faintFieldSeparator = faintColor.Sprint("=")
+	faintFieldSeparatorWithNewLine = faintColor.Sprint("=\n")
+}
 
 // Make sure that intLogger is a Logger
 var _ Logger = &intLogger{}

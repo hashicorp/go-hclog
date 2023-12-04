@@ -257,7 +257,7 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, "[INFO]  sublogger: this is test\n", rest)
 	})
 
-	t.Run("colorize", func(t *testing.T) {
+	t.Run("can force colors to on in any context", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
