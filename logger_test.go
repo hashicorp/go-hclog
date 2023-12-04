@@ -258,6 +258,10 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("can force colors to on in any context", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("colors are different on windows")
+		}
+
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
