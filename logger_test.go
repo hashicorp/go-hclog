@@ -586,6 +586,88 @@ func TestLogger(t *testing.T) {
 			t.Fatal("output from disabled logger:", str)
 		}
 	})
+
+	t.Run("sub-loggers levels don't bubble upward", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:            "root",
+			Output:          &buf,
+			SyncParentLevel: true,
+		})
+
+		another := logger.Named("sublogger")
+		another.SetLevel(Error)
+
+		logger.Info("this is test")
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+		assert.Equal(t, "[INFO]  root: this is test\n", rest)
+
+		buf.Reset()
+
+		a := logger.Named("a")
+		b := a.Named("b")
+		c := a.Named("c")
+
+		a.SetLevel(Error)
+
+		b.Info("this is a test")
+
+		require.Empty(t, buf.String())
+
+		b.SetLevel(Info)
+
+		assert.Equal(t, Error, a.GetLevel())
+
+		a.SetLevel(Error)
+
+		assert.Equal(t, Error, b.GetLevel())
+
+		assert.Equal(t, Error, c.GetLevel())
+
+		// Make sure that setting a sibling logger doesn't confuse
+		// when b had previously had it's own level.
+		c.SetLevel(Info)
+
+		assert.Equal(t, Error, b.GetLevel())
+	})
+
+	t.Run("level sync example", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:            "root",
+			Output:          &buf,
+			SyncParentLevel: true,
+		})
+
+		s := assert.New(t)
+
+		a := logger.Named("a")
+		a.SetLevel(Error)
+		b := a.Named("b")
+		c := a.Named("c")
+		s.Equal(Error, b.GetLevel())
+		s.Equal(Error, c.GetLevel())
+
+		b.SetLevel(Info)
+		s.Equal(Error, a.GetLevel())
+		s.Equal(Info, b.GetLevel())
+		s.Equal(Error, c.GetLevel())
+
+		a.SetLevel(Warn)
+		s.Equal(Warn, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
+		s.Equal(Warn, c.GetLevel())
+
+		logger.SetLevel(Trace)
+		s.Equal(Trace, logger.GetLevel())
+		s.Equal(Trace, a.GetLevel())
+		s.Equal(Trace, b.GetLevel())
+		s.Equal(Trace, c.GetLevel())
+	})
 }
 
 func TestLogger_leveledWriter(t *testing.T) {

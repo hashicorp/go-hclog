@@ -79,6 +79,16 @@ type intLogger struct {
 	writer *writer
 	level  *int32
 
+	// The value of curEpoch the last time we performed the level sync process
+	ownEpoch uint64
+
+	// Shared amongst all the loggers created in this hierachy, used to determine
+	// if the level sync process should be run by comparing it with ownEpoch
+	curEpoch *uint64
+
+	// The logger this one was created from. Only set when syncParentLevel is set
+	parent *intLogger
+
 	headerColor ColorOption
 	fieldColor  ColorOption
 
@@ -88,6 +98,7 @@ type intLogger struct {
 
 	// create subloggers with their own level setting
 	independentLevels bool
+	syncParentLevel   bool
 
 	subloggerHook func(sub Logger) Logger
 }
@@ -129,9 +140,9 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	}
 
 	var (
-		primaryColor ColorOption = ColorOff
-		headerColor  ColorOption = ColorOff
-		fieldColor   ColorOption = ColorOff
+		primaryColor = ColorOff
+		headerColor  = ColorOff
+		fieldColor   = ColorOff
 	)
 	switch {
 	case opts.ColorHeaderOnly:
@@ -152,8 +163,10 @@ func newLogger(opts *LoggerOptions) *intLogger {
 		mutex:             mutex,
 		writer:            newWriter(output, primaryColor),
 		level:             new(int32),
+		curEpoch:          new(uint64),
 		exclude:           opts.Exclude,
 		independentLevels: opts.IndependentLevels,
+		syncParentLevel:   opts.SyncParentLevel,
 		headerColor:       headerColor,
 		fieldColor:        fieldColor,
 		subloggerHook:     opts.SubloggerHook,
@@ -194,7 +207,7 @@ const offsetIntLogger = 3
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) log(name string, level Level, msg string, args ...interface{}) {
-	if level < Level(atomic.LoadInt32(l.level)) {
+	if level < l.GetLevel() {
 		return
 	}
 
@@ -597,7 +610,7 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 	vals := l.jsonMapEntry(t, name, level, msg)
 	args = append(l.implied, args...)
 
-	if args != nil && len(args) > 0 {
+	if len(args) > 0 {
 		if len(args)%2 != 0 {
 			cs, ok := args[len(args)-1].(CapturedStacktrace)
 			if ok {
@@ -718,27 +731,27 @@ func (l *intLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (l *intLogger) IsTrace() bool {
-	return Level(atomic.LoadInt32(l.level)) == Trace
+	return l.GetLevel() == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (l *intLogger) IsDebug() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Debug
+	return l.GetLevel() <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (l *intLogger) IsInfo() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Info
+	return l.GetLevel() <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (l *intLogger) IsWarn() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Warn
+	return l.GetLevel() <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (l *intLogger) IsError() bool {
-	return Level(atomic.LoadInt32(l.level)) <= Error
+	return l.GetLevel() <= Error
 }
 
 const MissingKey = "EXTRA_VALUE_AT_END"
@@ -854,12 +867,62 @@ func (l *intLogger) resetOutput(opts *LoggerOptions) error {
 // Update the logging level on-the-fly. This will affect all subloggers as
 // well.
 func (l *intLogger) SetLevel(level Level) {
-	atomic.StoreInt32(l.level, int32(level))
+	if !l.syncParentLevel {
+		atomic.StoreInt32(l.level, int32(level))
+		return
+	}
+
+	nsl := new(int32)
+	*nsl = int32(level)
+
+	l.level = nsl
+
+	l.ownEpoch = atomic.AddUint64(l.curEpoch, 1)
+}
+
+func (l *intLogger) searchLevelPtr() *int32 {
+	p := l.parent
+
+	ptr := l.level
+
+	max := l.ownEpoch
+
+	for p != nil {
+		if p.ownEpoch > max {
+			max = p.ownEpoch
+			ptr = p.level
+		}
+
+		p = p.parent
+	}
+
+	return ptr
 }
 
 // Returns the current level
 func (l *intLogger) GetLevel() Level {
-	return Level(atomic.LoadInt32(l.level))
+	// We perform the loads immediately to keep the CPU pipeline busy, which
+	// effectively makes the second load cost nothing. Once loaded into registers
+	// the comparison returns the already loaded value. The comparison is almost
+	// always true, so the branch predictor should hit consistently with it.
+	var (
+		curEpoch = atomic.LoadUint64(l.curEpoch)
+		level    = Level(atomic.LoadInt32(l.level))
+		own      = l.ownEpoch
+	)
+
+	if curEpoch == own {
+		return level
+	}
+
+	// Perform the level sync process. We'll avoid doing this next time by seeing the
+	// epoch as current.
+
+	ptr := l.searchLevelPtr()
+	l.level = ptr
+	l.ownEpoch = curEpoch
+
+	return Level(atomic.LoadInt32(ptr))
 }
 
 // Create a *log.Logger that will send it's data through this Logger. This
@@ -912,6 +975,8 @@ func (l *intLogger) copy() *intLogger {
 	if l.independentLevels {
 		sl.level = new(int32)
 		*sl.level = *l.level
+	} else if l.syncParentLevel {
+		sl.parent = l
 	}
 
 	return &sl
