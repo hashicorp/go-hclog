@@ -488,7 +488,7 @@ func TestLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0o755), "bits", Binary(5))
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
@@ -678,15 +678,17 @@ func TestLogger(t *testing.T) {
 		s := assert.New(t)
 
 		a := logger.Named("a")
-		a.SetLevel(Error)
 		b := a.Named("b")
 		c := a.Named("c")
-		s.Equal(Error, b.GetLevel())
-		s.Equal(Error, c.GetLevel())
 
-		b.SetLevel(Info)
-		s.Equal(Error, a.GetLevel())
-		s.Equal(Info, b.GetLevel())
+		b.SetLevel(Warn)
+		s.Equal(Info, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
+		s.Equal(Info, c.GetLevel())
+
+		c.SetLevel(Error)
+		s.Equal(Info, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
 		s.Equal(Error, c.GetLevel())
 
 		a.SetLevel(Warn)
@@ -1008,7 +1010,7 @@ func TestLogger_JSON(t *testing.T) {
 			JSONFormat: true,
 		})
 
-		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0755), "bits", Binary(5))
+		logger.Info("this is test", "bytes", Hex(12), "perms", Octal(0o755), "bits", Binary(5))
 
 		b := buf.Bytes()
 
@@ -1019,7 +1021,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "this is test", raw["@message"])
 		assert.Equal(t, float64(12), raw["bytes"])
-		assert.Equal(t, float64(0755), raw["perms"])
+		assert.Equal(t, float64(0o755), raw["perms"])
 		assert.Equal(t, float64(5), raw["bits"])
 	})
 
@@ -1160,7 +1162,6 @@ func TestLogger_JSON(t *testing.T) {
 
 		assert.Equal(t, "[INFO]  test: who=programmer why=testing\n", rest)
 	})
-
 }
 
 type customErrJSON struct {
