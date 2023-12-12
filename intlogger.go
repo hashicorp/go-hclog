@@ -93,6 +93,9 @@ type intLogger struct {
 	writer *writer
 	level  *int32
 
+	// The value of curEpoch when our level was set
+	setEpoch uint64
+
 	// The value of curEpoch the last time we performed the level sync process
 	ownEpoch uint64
 
@@ -892,6 +895,7 @@ func (l *intLogger) SetLevel(level Level) {
 	l.level = nsl
 
 	l.ownEpoch = atomic.AddUint64(l.curEpoch, 1)
+	l.setEpoch = l.ownEpoch
 }
 
 func (l *intLogger) searchLevelPtr() *int32 {
@@ -899,11 +903,11 @@ func (l *intLogger) searchLevelPtr() *int32 {
 
 	ptr := l.level
 
-	max := l.ownEpoch
+	max := l.setEpoch
 
 	for p != nil {
-		if p.ownEpoch > max {
-			max = p.ownEpoch
+		if p.setEpoch > max {
+			max = p.setEpoch
 			ptr = p.level
 		}
 

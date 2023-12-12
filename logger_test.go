@@ -666,7 +666,44 @@ func TestLogger(t *testing.T) {
 		assert.Equal(t, Error, b.GetLevel())
 	})
 
-	t.Run("level sync example", func(t *testing.T) {
+	t.Run("level sync example 1", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:            "root",
+			Output:          &buf,
+			SyncParentLevel: true,
+		})
+
+		s := assert.New(t)
+
+		a := logger.Named("a")
+		b := a.Named("b")
+		c := a.Named("c")
+
+		b.SetLevel(Warn)
+		s.Equal(Info, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
+		s.Equal(Info, c.GetLevel())
+
+		c.SetLevel(Error)
+		s.Equal(Info, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
+		s.Equal(Error, c.GetLevel())
+
+		a.SetLevel(Warn)
+		s.Equal(Warn, a.GetLevel())
+		s.Equal(Warn, b.GetLevel())
+		s.Equal(Warn, c.GetLevel())
+
+		logger.SetLevel(Trace)
+		s.Equal(Trace, logger.GetLevel())
+		s.Equal(Trace, a.GetLevel())
+		s.Equal(Trace, b.GetLevel())
+		s.Equal(Trace, c.GetLevel())
+	})
+
+	t.Run("level sync example 2", func(t *testing.T) {
 		var buf bytes.Buffer
 
 		logger := New(&LoggerOptions{
