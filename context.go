@@ -27,7 +27,7 @@ func WithContext(ctx context.Context, logger Logger, args ...interface{}) contex
 // this will never return a nil value.
 func FromContext(ctx context.Context) Logger {
 	logger, _ := ctx.Value(contextKey).(Logger)
-	if logger == nil {
+	if logger.impl == nil {
 		return L()
 	}
 

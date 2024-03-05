@@ -538,7 +538,7 @@ func TestLogger(t *testing.T) {
 
 		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
 
-		logger.(OutputResettable).ResetOutput(&LoggerOptions{
+		logger.impl.(OutputResettable).ResetOutput(&LoggerOptions{
 			Output: &second,
 		})
 
@@ -568,7 +568,7 @@ func TestLogger(t *testing.T) {
 		str := first.String()
 		assert.Empty(t, str)
 
-		logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
+		logger.impl.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
 			Output: &second,
 		}, &first)
 
