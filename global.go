@@ -36,7 +36,7 @@ func Default() Logger {
 	protect.Do(func() {
 		// If SetDefault was used before Default() was called, we need to
 		// detect that here.
-		if def == nil {
+		if def.impl == nil {
 			def = New(DefaultOptions)
 		}
 	})

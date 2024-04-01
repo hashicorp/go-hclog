@@ -12,13 +12,14 @@ import (
 // NewNullLogger instantiates a Logger for which all calls
 // will succeed without doing anything.
 // Useful for testing purposes.
-func NewNullLogger() Logger {
+func NewNullLogger() LogImpl {
 	return &nullLogger{}
 }
 
 type nullLogger struct{}
 
 func (l *nullLogger) Log(level Level, msg string, args ...interface{}) {}
+func (l *nullLogger) LogRecord(r Record)                               {}
 
 func (l *nullLogger) Trace(msg string, args ...interface{}) {}
 
@@ -42,13 +43,13 @@ func (l *nullLogger) IsError() bool { return false }
 
 func (l *nullLogger) ImpliedArgs() []interface{} { return []interface{}{} }
 
-func (l *nullLogger) With(args ...interface{}) Logger { return l }
+func (l *nullLogger) With(args ...interface{}) LogImpl { return l }
 
 func (l *nullLogger) Name() string { return "" }
 
-func (l *nullLogger) Named(name string) Logger { return l }
+func (l *nullLogger) Named(name string) LogImpl { return l }
 
-func (l *nullLogger) ResetNamed(name string) Logger { return l }
+func (l *nullLogger) ResetNamed(name string) LogImpl { return l }
 
 func (l *nullLogger) SetLevel(level Level) {}
 

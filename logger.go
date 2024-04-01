@@ -144,13 +144,15 @@ func (l Level) String() string {
 	}
 }
 
-// Logger describes the interface that must be implemented by all loggers.
-type Logger interface {
+// LogImpl describes the interface that must be implemented by all loggers.
+type LogImpl interface {
 	// Args are alternating key, val pairs
 	// keys must be strings
 	// vals can be any type, but display is implementation specific
 	// Emit a message and key/value pairs at a provided log level
 	Log(level Level, msg string, args ...interface{})
+
+	LogRecord(Record)
 
 	// Emit a message and key/value pairs at the TRACE level
 	Trace(msg string, args ...interface{})
@@ -187,7 +189,7 @@ type Logger interface {
 	ImpliedArgs() []interface{}
 
 	// Creates a sublogger that will always have the given key/value pairs
-	With(args ...interface{}) Logger
+	With(args ...interface{}) LogImpl
 
 	// Returns the Name of the logger
 	Name() string
@@ -196,12 +198,12 @@ type Logger interface {
 	// If the logger already has a name, the new value will be appended to the current
 	// name. That way, a major subsystem can use this to decorate all it's own logs
 	// without losing context.
-	Named(name string) Logger
+	Named(name string) LogImpl
 
 	// Create a logger that will prepend the name string on the front of all messages.
 	// This sets the name of the logger to the value directly, unlike Named which honor
 	// the current name as well.
-	ResetNamed(name string) Logger
+	ResetNamed(name string) LogImpl
 
 	// Updates the level. This should affect all related loggers as well,
 	// unless they were created with IndependentLevels. If an
@@ -330,7 +332,7 @@ type LoggerOptions struct {
 	// the newly created Logger and the returned Logger is returned from the
 	// original function. This option allows customization via interception and
 	// wrapping of Logger instances.
-	SubloggerHook func(sub Logger) Logger
+	SubloggerHook func(sub LogImpl) LogImpl
 }
 
 // InterceptLogger describes the interface for using a logger
@@ -340,7 +342,7 @@ type LoggerOptions struct {
 // at a higher one.
 type InterceptLogger interface {
 	// Logger is the root logger for an InterceptLogger
-	Logger
+	LogImpl
 
 	// RegisterSink adds a SinkAdapter to the InterceptLogger
 	RegisterSink(sink SinkAdapter)
