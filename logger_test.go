@@ -1232,6 +1232,28 @@ func TestLogger_JSON(t *testing.T) {
 		assert.Equal(t, "[INFO]  test: who=programmer why=testing\n", rest)
 	})
 
+	t.Run("disable json escape when log special character", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:               "test",
+			Output:             &buf,
+			JSONFormat:         true,
+			JSONEscapeDisabled: true,
+		})
+
+		logger.Info("this is test and use > < &")
+
+		b := buf.Bytes()
+
+		var raw map[string]interface{}
+		if err := json.Unmarshal(b, &raw); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, "this is test and use > < &", raw["@message"])
+	})
+
 }
 
 type customErrJSON struct {
