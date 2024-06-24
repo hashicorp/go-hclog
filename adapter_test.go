@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"strings"
 	"testing"
+	"testing/slogtest"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slog"
-	"golang.org/x/exp/slog/slogtest"
 )
 
 func TestAdapter(t *testing.T) {

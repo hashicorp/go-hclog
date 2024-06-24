@@ -2,10 +2,10 @@ package hclogslog
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
 	"github.com/hashicorp/go-hclog"
-	"golang.org/x/exp/slog"
 )
 
 func Adapt(l hclog.Logger) slog.Handler {
@@ -79,7 +79,6 @@ func (h *Handler) processGroup(prefix string, a slog.Attr) []any {
 	if a.Key == "" {
 		for _, subA := range a.Value.Group() {
 			if subA.Value.Kind() == slog.KindGroup {
-
 			} else {
 				attrs = append(attrs, prefix+subA.Key, subA.Value.Any())
 			}
