@@ -5,7 +5,6 @@ package hclog
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 )
 
@@ -18,18 +17,19 @@ func NewNullLogger() LogImpl {
 
 type nullLogger struct{}
 
-func (l *nullLogger) Log(level Level, msg string, args ...interface{}) {}
-func (l *nullLogger) LogRecord(r Record)                               {}
+func (l *nullLogger) Log(_ Level, _ string, _ ...interface{}) {}
 
-func (l *nullLogger) Trace(msg string, args ...interface{}) {}
+func (l *nullLogger) LogRecord(_ Record) {}
 
-func (l *nullLogger) Debug(msg string, args ...interface{}) {}
+func (l *nullLogger) Trace(_ string, _ ...interface{}) {}
 
-func (l *nullLogger) Info(msg string, args ...interface{}) {}
+func (l *nullLogger) Debug(_ string, _ ...interface{}) {}
 
-func (l *nullLogger) Warn(msg string, args ...interface{}) {}
+func (l *nullLogger) Info(_ string, _ ...interface{}) {}
 
-func (l *nullLogger) Error(msg string, args ...interface{}) {}
+func (l *nullLogger) Warn(_ string, _ ...interface{}) {}
+
+func (l *nullLogger) Error(_ string, _ ...interface{}) {}
 
 func (l *nullLogger) IsTrace() bool { return false }
 
@@ -43,22 +43,22 @@ func (l *nullLogger) IsError() bool { return false }
 
 func (l *nullLogger) ImpliedArgs() []interface{} { return []interface{}{} }
 
-func (l *nullLogger) With(args ...interface{}) LogImpl { return l }
+func (l *nullLogger) With(_ ...interface{}) LogImpl { return l }
 
 func (l *nullLogger) Name() string { return "" }
 
-func (l *nullLogger) Named(name string) LogImpl { return l }
+func (l *nullLogger) Named(_ string) LogImpl { return l }
 
-func (l *nullLogger) ResetNamed(name string) LogImpl { return l }
+func (l *nullLogger) ResetNamed(_ string) LogImpl { return l }
 
-func (l *nullLogger) SetLevel(level Level) {}
+func (l *nullLogger) SetLevel(_ Level) {}
 
-func (l *nullLogger) GetLevel() Level { return NoLevel }
+func (l *nullLogger) Level() Level { return NoLevel }
 
 func (l *nullLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 	return log.New(l.StandardWriter(opts), "", log.LstdFlags)
 }
 
-func (l *nullLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
-	return ioutil.Discard
+func (l *nullLogger) StandardWriter(_ *StandardLoggerOptions) io.Writer {
+	return io.Discard
 }

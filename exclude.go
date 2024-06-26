@@ -10,7 +10,7 @@ import (
 
 // ExcludeByMessage provides a simple way to build a list of log messages that
 // can be queried and matched. This is meant to be used with the Exclude
-// option on Options to suppress log messages. This does not hold any mutexs
+// option on Options to suppress log messages. This does not hold any mutexes
 // within itself, so normal usage would be to Add entries at setup and none after
 // Exclude is going to be called. Exclude is called with a mutex held within
 // the Logger, so that doesn't need to use a mutex. Example usage:
@@ -32,8 +32,8 @@ func (f *ExcludeByMessage) Add(msg string) {
 	f.messages[msg] = struct{}{}
 }
 
-// Return true if the given message should be included
-func (f *ExcludeByMessage) Exclude(level Level, msg string, args ...interface{}) bool {
+// Exclude returns true if the given message should be included.
+func (f *ExcludeByMessage) Exclude(_ Level, msg string, _ ...interface{}) bool {
 	_, ok := f.messages[msg]
 	return ok
 }
@@ -41,8 +41,8 @@ func (f *ExcludeByMessage) Exclude(level Level, msg string, args ...interface{})
 // ExcludeByPrefix is a simple type to match a message string that has a common prefix.
 type ExcludeByPrefix string
 
-// Matches an message that starts with the prefix.
-func (p ExcludeByPrefix) Exclude(level Level, msg string, args ...interface{}) bool {
+// Exclude matches an message that starts with the prefix.
+func (p ExcludeByPrefix) Exclude(_ Level, msg string, _ ...interface{}) bool {
 	return strings.HasPrefix(msg, string(p))
 }
 
@@ -52,17 +52,17 @@ type ExcludeByRegexp struct {
 	Regexp *regexp.Regexp
 }
 
-// Exclude the log message if the message string matches the regexp
+// Exclude the log message if the message string matches the regexp.
 func (e ExcludeByRegexp) Exclude(level Level, msg string, args ...interface{}) bool {
 	return e.Regexp.MatchString(msg)
 }
 
-// ExcludeFuncs is a slice of functions that will called to see if a log entry
+// ExcludeFuncs is a slice of functions that will be called to see if a log entry
 // should be filtered or not. It stops calling functions once at least one returns
 // true.
 type ExcludeFuncs []func(level Level, msg string, args ...interface{}) bool
 
-// Calls each function until one of them returns true
+// Exclude calls each function until one of them returns true
 func (ff ExcludeFuncs) Exclude(level Level, msg string, args ...interface{}) bool {
 	for _, f := range ff {
 		if f(level, msg, args...) {

@@ -42,7 +42,7 @@ func (i *interceptLogger) Log(level Level, msg string, args ...interface{}) {
 	i.log(level, msg, args...)
 }
 
-// log is used to make the caller stack frame lookup consistent. If Warn,Info,etc
+// log is used to make the caller stack frame lookup consistent. If Warn, Info, etc.
 // all called Log then direct calls to Log would have a different stack frame
 // depth. By having all the methods call the same helper we ensure the stack
 // frame depth is the same.
@@ -59,27 +59,27 @@ func (i *interceptLogger) log(level Level, msg string, args ...interface{}) {
 	}
 }
 
-// Emit the message and args at TRACE level to log and sinks
+// Trace emits a message and key/value pairs at the TRACE level to log and sinks.
 func (i *interceptLogger) Trace(msg string, args ...interface{}) {
 	i.log(Trace, msg, args...)
 }
 
-// Emit the message and args at DEBUG level to log and sinks
+// Debug emits a message and key/value pairs at the DEBUG level to log and sinks.
 func (i *interceptLogger) Debug(msg string, args ...interface{}) {
 	i.log(Debug, msg, args...)
 }
 
-// Emit the message and args at INFO level to log and sinks
+// Info emits a message and key/value pairs at the INFO level to log and sinks.
 func (i *interceptLogger) Info(msg string, args ...interface{}) {
 	i.log(Info, msg, args...)
 }
 
-// Emit the message and args at WARN level to log and sinks
+// Warn emits a message and key/value pairs at the WARN level to log and sinks.
 func (i *interceptLogger) Warn(msg string, args ...interface{}) {
 	i.log(Warn, msg, args...)
 }
 
-// Emit the message and args at ERROR level to log and sinks
+// Error emits a message and key/value pairs at the ERROR level to log and sinks.
 func (i *interceptLogger) Error(msg string, args ...interface{}) {
 	i.log(Error, msg, args...)
 }
@@ -94,14 +94,14 @@ func (i *interceptLogger) retrieveImplied(args ...interface{}) []interface{} {
 	return cp
 }
 
-// Create a new sub-Logger that a name descending from the current name.
+// Named creates a new sub-Logger with a name descending from the current name.
 // This is used to create a subsystem specific Logger.
 // Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) Named(name string) LogImpl {
 	return i.NamedIntercept(name)
 }
 
-// Create a new sub-Logger with an explicit name. This ignores the current
+// ResetNamed creates a new sub-Logger with an explicit name. This ignores the current
 // name. This is used to create a standalone logger that doesn't fall
 // within the normal hierarchy. Registered sinks will subscribe
 // to these messages as well.
@@ -109,8 +109,8 @@ func (i *interceptLogger) ResetNamed(name string) LogImpl {
 	return i.ResetNamedIntercept(name)
 }
 
-// Create a new sub-Logger that a name decending from the current name.
-// This is used to create a subsystem specific Logger.
+// NamedIntercept creates a new sub-Logger with a name descending from the current name.
+// This is used to create a subsystem specific LogImpl.
 // Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
 	var sub interceptLogger
@@ -120,7 +120,7 @@ func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
 	return &sub
 }
 
-// Create a new sub-Logger with an explicit name. This ignores the current
+// ResetNamedIntercept creates a new sub-Logger with an explicit name. This ignores the current
 // name. This is used to create a standalone logger that doesn't fall
 // within the normal hierarchy. Registered sinks will subscribe
 // to these messages as well.
@@ -132,9 +132,8 @@ func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
 	return &sub
 }
 
-// Return a sub-Logger for which every emitted log message will contain
-// the given key/value pairs. This is used to create a context specific
-// Logger.
+// With returns a sub-Logger for which every emitted log message will contain
+// the given key/value pairs. This is used to create a context specific LogImpl.
 func (i *interceptLogger) With(args ...interface{}) LogImpl {
 	var sub interceptLogger
 
@@ -177,10 +176,12 @@ func (i *interceptLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logge
 	return log.New(i.StandardWriter(opts), "", 0)
 }
 
+// Deprecated: use LogImpl.StandardWriter
 func (i *interceptLogger) StandardWriterIntercept(opts *StandardLoggerOptions) io.Writer {
 	return i.StandardWriter(opts)
 }
 
+// StandardWriter returns a value that conforms to io.Writer, which can be passed into log.SetOutput().
 func (i *interceptLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 	return &stdlogAdapter{
 		log:                      i,
@@ -190,6 +191,8 @@ func (i *interceptLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer 
 	}
 }
 
+// ResetOutput swaps the current output writer with the one given in the
+// opts. Color options given in opts will be used for the new output.
 func (i *interceptLogger) ResetOutput(opts *LoggerOptions) error {
 	if or, ok := i.LogImpl.(OutputResettable); ok {
 		return or.ResetOutput(opts)
@@ -198,6 +201,9 @@ func (i *interceptLogger) ResetOutput(opts *LoggerOptions) error {
 	}
 }
 
+// ResetOutputWithFlush swaps the current output writer with the one given
+// in the opts, first calling Flush on the given Flushable. Color options
+// given in opts will be used for the new output.
 func (i *interceptLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {
 	if or, ok := i.LogImpl.(OutputResettable); ok {
 		return or.ResetOutputWithFlush(opts, flushable)
