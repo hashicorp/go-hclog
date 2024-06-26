@@ -14,7 +14,7 @@ import (
 // beginning of inputs.
 var logTimestampRegexp = regexp.MustCompile(`^[\d\s\:\/\.\+-TZ]*`)
 
-// Provides a io.Writer to shim the data out of *log.Logger
+// stdlogAdapter provides an io.Writer to shim the data out of *log.Logger
 // and back into our Logger. This is basically the only way to
 // build upon *log.Logger.
 type stdlogAdapter struct {
@@ -24,7 +24,7 @@ type stdlogAdapter struct {
 	forceLevel               Level
 }
 
-// Take the data, infer the levels if configured, and send it through
+// Write takes the data, infer the levels if configured, and send it through
 // a regular Logger.
 func (s *stdlogAdapter) Write(data []byte) (int, error) {
 	str := string(bytes.TrimRight(data, " \t\n"))
@@ -67,7 +67,7 @@ func (s *stdlogAdapter) dispatch(str string, level Level) {
 	}
 }
 
-// Detect, based on conventions, what log level this is.
+// pickLevel detects, based on conventions, what log level this is.
 func (s *stdlogAdapter) pickLevel(str string) (Level, string) {
 	switch {
 	case strings.HasPrefix(str, "[DEBUG]"):
@@ -101,7 +101,7 @@ func (l *logWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// Takes a standard library logger and returns a Logger that will write to it
+// FromStandardLogger takes a standard library logger and returns a Logger that will write to it.
 func FromStandardLogger(l *log.Logger, opts *LoggerOptions) Logger {
 	var dl LoggerOptions = *opts
 

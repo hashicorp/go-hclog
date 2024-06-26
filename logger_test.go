@@ -651,19 +651,19 @@ func TestLogger(t *testing.T) {
 
 		b.SetLevel(Info)
 
-		assert.Equal(t, Error, a.GetLevel())
+		assert.Equal(t, Error, a.Level())
 
 		a.SetLevel(Error)
 
-		assert.Equal(t, Error, b.GetLevel())
+		assert.Equal(t, Error, b.Level())
 
-		assert.Equal(t, Error, c.GetLevel())
+		assert.Equal(t, Error, c.Level())
 
 		// Make sure that setting a sibling logger doesn't confuse
 		// when b had previously had it's own level.
 		c.SetLevel(Info)
 
-		assert.Equal(t, Error, b.GetLevel())
+		assert.Equal(t, Error, b.Level())
 	})
 
 	t.Run("level sync example 1", func(t *testing.T) {
@@ -682,25 +682,25 @@ func TestLogger(t *testing.T) {
 		c := a.Named("c")
 
 		b.SetLevel(Warn)
-		s.Equal(Info, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Info, c.GetLevel())
+		s.Equal(Info, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Info, c.Level())
 
 		c.SetLevel(Error)
-		s.Equal(Info, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Error, c.GetLevel())
+		s.Equal(Info, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Error, c.Level())
 
 		a.SetLevel(Warn)
-		s.Equal(Warn, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Warn, c.GetLevel())
+		s.Equal(Warn, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Warn, c.Level())
 
 		logger.SetLevel(Trace)
-		s.Equal(Trace, logger.GetLevel())
-		s.Equal(Trace, a.GetLevel())
-		s.Equal(Trace, b.GetLevel())
-		s.Equal(Trace, c.GetLevel())
+		s.Equal(Trace, logger.Level())
+		s.Equal(Trace, a.Level())
+		s.Equal(Trace, b.Level())
+		s.Equal(Trace, c.Level())
 	})
 
 	t.Run("level sync example 2", func(t *testing.T) {
@@ -718,24 +718,24 @@ func TestLogger(t *testing.T) {
 		a.SetLevel(Error)
 		b := a.Named("b")
 		c := a.Named("c")
-		s.Equal(Error, b.GetLevel())
-		s.Equal(Error, c.GetLevel())
+		s.Equal(Error, b.Level())
+		s.Equal(Error, c.Level())
 
 		b.SetLevel(Info)
-		s.Equal(Error, a.GetLevel())
-		s.Equal(Info, b.GetLevel())
-		s.Equal(Error, c.GetLevel())
+		s.Equal(Error, a.Level())
+		s.Equal(Info, b.Level())
+		s.Equal(Error, c.Level())
 
 		a.SetLevel(Warn)
-		s.Equal(Warn, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Warn, c.GetLevel())
+		s.Equal(Warn, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Warn, c.Level())
 
 		logger.SetLevel(Trace)
-		s.Equal(Trace, logger.GetLevel())
-		s.Equal(Trace, a.GetLevel())
-		s.Equal(Trace, b.GetLevel())
-		s.Equal(Trace, c.GetLevel())
+		s.Equal(Trace, logger.Level())
+		s.Equal(Trace, a.Level())
+		s.Equal(Trace, b.Level())
+		s.Equal(Trace, c.Level())
 	})
 	t.Run("level sync example 3", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -752,24 +752,24 @@ func TestLogger(t *testing.T) {
 		b := a.Named("b")
 
 		a.SetLevel(Trace)
-		s.Equal(Trace, a.GetLevel())
-		s.Equal(Trace, b.GetLevel())
+		s.Equal(Trace, a.Level())
+		s.Equal(Trace, b.Level())
 
 		b.SetLevel(Warn)
-		s.Equal(Trace, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
+		s.Equal(Trace, a.Level())
+		s.Equal(Warn, b.Level())
 
 		c := a.Named("c")
 
 		c.SetLevel(Error)
-		s.Equal(Trace, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Error, c.GetLevel())
+		s.Equal(Trace, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Error, c.Level())
 
 		a.SetLevel(Warn)
-		s.Equal(Warn, a.GetLevel())
-		s.Equal(Warn, b.GetLevel())
-		s.Equal(Warn, c.GetLevel())
+		s.Equal(Warn, a.Level())
+		s.Equal(Warn, b.Level())
+		s.Equal(Warn, c.Level())
 	})
 }
 

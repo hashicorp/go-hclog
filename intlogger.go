@@ -226,7 +226,9 @@ const offsetIntLogger = 4
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) log(name string, level Level, msg string, args ...interface{}) {
-	if level < l.GetLevel() {
+	// Return early if the requested level is set to 'off', or is a higher fidelity
+	// than the logger is configured for.
+	if level == Off || level < l.Level() {
 		return
 	}
 
@@ -680,7 +682,7 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 	}
 }
 
-func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg string) map[string]interface{} {
+func (l *intLogger) jsonMapEntry(t time.Time, name string, level Level, msg string) map[string]interface{} {
 	vals := map[string]interface{}{
 		"@message": msg,
 	}
@@ -755,27 +757,27 @@ func (l *intLogger) Error(msg string, args ...interface{}) {
 
 // Indicate that the logger would emit TRACE level logs
 func (l *intLogger) IsTrace() bool {
-	return l.GetLevel() == Trace
+	return l.Level() == Trace
 }
 
 // Indicate that the logger would emit DEBUG level logs
 func (l *intLogger) IsDebug() bool {
-	return l.GetLevel() <= Debug
+	return l.Level() <= Debug
 }
 
 // Indicate that the logger would emit INFO level logs
 func (l *intLogger) IsInfo() bool {
-	return l.GetLevel() <= Info
+	return l.Level() <= Info
 }
 
 // Indicate that the logger would emit WARN level logs
 func (l *intLogger) IsWarn() bool {
-	return l.GetLevel() <= Warn
+	return l.Level() <= Warn
 }
 
 // Indicate that the logger would emit ERROR level logs
 func (l *intLogger) IsError() bool {
-	return l.GetLevel() <= Error
+	return l.Level() <= Error
 }
 
 const MissingKey = "EXTRA_VALUE_AT_END"
@@ -925,7 +927,7 @@ func (l *intLogger) searchLevelPtr() *int32 {
 }
 
 // Returns the current level
-func (l *intLogger) GetLevel() Level {
+func (l *intLogger) Level() Level {
 	// We perform the loads immediately to keep the CPU pipeline busy, which
 	// effectively makes the second load cost nothing. Once loaded into registers
 	// the comparison returns the already loaded value. The comparison is almost
@@ -950,8 +952,8 @@ func (l *intLogger) GetLevel() Level {
 	return Level(atomic.LoadInt32(ptr))
 }
 
-// Create a *log.Logger that will send it's data through this Logger. This
-// allows packages that expect to be using the standard library log to actually
+// StandardLogger creates a *log.Logger that will send its data through this Logger.
+// This allows packages that expect to be using the standard library log to actually
 // use this logger.
 func (l *intLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 	if opts == nil {

@@ -59,19 +59,19 @@ func Fmt(str string, args ...interface{}) Format {
 	return append(Format{str}, args...)
 }
 
-// A simple shortcut to format numbers in hex when displayed with the normal
-// text output. For example: L.Info("header value", Hex(17))
+// Hex provides a simple shortcut to format numbers in hex when displayed with the normal
+// text output. For example: L.Info("header value", Hex(17)).
 type Hex int
 
-// A simple shortcut to format numbers in octal when displayed with the normal
-// text output. For example: L.Info("perms", Octal(17))
+// Octal provides a simple shortcut to format numbers in octal when displayed with the normal
+// text output. For example: L.Info("perms", Octal(17)).
 type Octal int
 
-// A simple shortcut to format numbers in binary when displayed with the normal
-// text output. For example: L.Info("bits", Binary(17))
+// Binary provides a simple shortcut to format numbers in binary when displayed with the normal
+// text output. For example: L.Info("bits", Binary(17)).
 type Binary int
 
-// A simple shortcut to format strings with Go quoting. Control and
+// Quote provides a simple shortcut to format strings with Go quoting. Control and
 // non-printable characters will be escaped with their backslash equivalents in
 // output. Intended for untrusted or multiline strings which should be logged
 // as concisely as possible.
@@ -123,6 +123,7 @@ func LevelFromString(levelStr string) Level {
 	}
 }
 
+// String returns a lowercase string representation of a Level.
 func (l Level) String() string {
 	switch l {
 	case Trace:
@@ -145,78 +146,83 @@ func (l Level) String() string {
 }
 
 // LogImpl describes the interface that must be implemented by all loggers.
+// TODO: Suggested names: BaseLogger, CoreLogger, RootLogger. Impl just doesn't feel right.
 type LogImpl interface {
-	// Args are alternating key, val pairs
-	// keys must be strings
-	// vals can be any type, but display is implementation specific
-	// Emit a message and key/value pairs at a provided log level
+	// Log emits a message and key/value pairs at a provided log level.
+	// Args are alternating key, val pairs.
+	// Keys must be strings.
+	// Vals can be any type, but display is implementation specific.
 	Log(level Level, msg string, args ...interface{})
 
 	LogRecord(Record)
 
-	// Emit a message and key/value pairs at the TRACE level
+	// Trace emits a message and key/value pairs at the TRACE level.
 	Trace(msg string, args ...interface{})
 
-	// Emit a message and key/value pairs at the DEBUG level
+	// Debug emits a message and key/value pairs at the DEBUG level.
 	Debug(msg string, args ...interface{})
 
-	// Emit a message and key/value pairs at the INFO level
+	// Info emits a message and key/value pairs at the INFO level.
 	Info(msg string, args ...interface{})
 
-	// Emit a message and key/value pairs at the WARN level
+	// Warn emits a message and key/value pairs at the WARN level.
 	Warn(msg string, args ...interface{})
 
-	// Emit a message and key/value pairs at the ERROR level
+	// Error emits a message and key/value pairs at the ERROR level.
 	Error(msg string, args ...interface{})
 
-	// Indicate if TRACE logs would be emitted. This and the other Is* guards
-	// are used to elide expensive logging code based on the current level.
+	// IsTrace indicates if TRACE logs would be emitted.
+	// This and the other Is* guards are used to elide expensive logging code based on the current level.
 	IsTrace() bool
 
-	// Indicate if DEBUG logs would be emitted. This and the other Is* guards
+	// IsDebug indicates if DEBUG logs would be emitted. This and the other Is* guards.
+	// This and the other Is* guards are used to elide expensive logging code based on the current level.
 	IsDebug() bool
 
-	// Indicate if INFO logs would be emitted. This and the other Is* guards
+	// IsInfo indicates if INFO logs would be emitted. This and the other Is* guards.
+	// This and the other Is* guards are used to elide expensive logging code based on the current level.
 	IsInfo() bool
 
-	// Indicate if WARN logs would be emitted. This and the other Is* guards
+	// IsWarn indicates if WARN logs would be emitted. This and the other Is* guards.
+	// This and the other Is* guards are used to elide expensive logging code based on the current level.
 	IsWarn() bool
 
-	// Indicate if ERROR logs would be emitted. This and the other Is* guards
+	// IsError indicates if ERROR logs would be emitted. This and the other Is* guards.
+	// This and the other Is* guards are used to elide expensive logging code based on the current level.
 	IsError() bool
 
-	// ImpliedArgs returns With key/value pairs
+	// ImpliedArgs returns With key/value pairs.
 	ImpliedArgs() []interface{}
 
-	// Creates a sublogger that will always have the given key/value pairs
+	// With creates a sublogger that will always have the given key/value pairs.
 	With(args ...interface{}) LogImpl
 
-	// Returns the Name of the logger
+	// Name returns the Name of the logger
 	Name() string
 
-	// Create a logger that will prepend the name string on the front of all messages.
+	// Named creates a logger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
-	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// name. That way, a major subsystem can use this to decorate all its own logs
 	// without losing context.
 	Named(name string) LogImpl
 
-	// Create a logger that will prepend the name string on the front of all messages.
+	// ResetNamed creates a logger that will prepend the name string on the front of all messages.
 	// This sets the name of the logger to the value directly, unlike Named which honor
 	// the current name as well.
 	ResetNamed(name string) LogImpl
 
-	// Updates the level. This should affect all related loggers as well,
+	// SetLevel updates the level. This should affect all related loggers as well,
 	// unless they were created with IndependentLevels. If an
 	// implementation cannot update the level on the fly, it should no-op.
 	SetLevel(level Level)
 
-	// Returns the current level
-	GetLevel() Level
+	// Level returns the current level.
+	Level() Level
 
-	// Return a value that conforms to the stdlib log.Logger interface
+	// StandardLogger returns a value that conforms to the stdlib log.Logger interface.
 	StandardLogger(opts *StandardLoggerOptions) *log.Logger
 
-	// Return a value that conforms to io.Writer, which can be passed into log.SetOutput()
+	// StandardWriter returns a value that conforms to io.Writer, which can be passed into log.SetOutput().
 	StandardWriter(opts *StandardLoggerOptions) io.Writer
 }
 
@@ -249,13 +255,13 @@ type TimeFunction = func() time.Time
 
 // LoggerOptions can be used to configure a new logger.
 type LoggerOptions struct {
-	// Name of the subsystem to prefix logs with
+	// Name of the subsystem to prefix logs with.
 	Name string
 
-	// The threshold for the logger. Anything less severe is suppressed
+	// The threshold for the logger. Anything less severe is suppressed.
 	Level Level
 
-	// Where to write the logs to. Defaults to os.Stderr if nil
+	// Where to write the logs to. Defaults to os.Stderr if nil.
 	Output io.Writer
 
 	// An optional Locker in case Output is shared. This can be a sync.Mutex or
@@ -266,20 +272,20 @@ type LoggerOptions struct {
 	// Control if the output should be in JSON.
 	JSONFormat bool
 
-	// Include file and line information in each log line
+	// Include file and line information in each log line.
 	IncludeLocation bool
 
 	// AdditionalLocationOffset is the number of additional stack levels to skip
-	// when finding the file and line information for the log line
+	// when finding the file and line information for the log line.
 	AdditionalLocationOffset int
 
-	// The time format to use instead of the default
+	// The time format to use instead of the default.
 	TimeFormat string
 
-	// A function which is called to get the time object that is formatted using `TimeFormat`
+	// A function which is called to get the time object that is formatted using `TimeFormat`.
 	TimeFn TimeFunction
 
-	// Control whether or not to display the time at all. This is required
+	// Control whether to display the time at all. This is required
 	// because setting TimeFormat to empty assumes the default format.
 	DisableTime bool
 
@@ -297,7 +303,7 @@ type LoggerOptions struct {
 	// A function which is called with the log information and if it returns true the value
 	// should not be logged.
 	// This is useful when interacting with a system that you wish to suppress the log
-	// message for (because it's too noisy, etc)
+	// message for (because it's too noisy, etc.).
 	Exclude func(level Level, msg string, args ...interface{}) bool
 
 	// IndependentLevels causes subloggers to be created with an independent
@@ -312,16 +318,16 @@ type LoggerOptions struct {
 	// a.SetLevel(Error)
 	// b := a.Named("b")
 	// c := a.Named("c")
-	// b.GetLevel() => Error
-	// c.GetLevel() => Error
+	// b.Level() => Error
+	// c.Level() => Error
 	// b.SetLevel(Info)
-	// a.GetLevel() => Error
-	// b.GetLevel() => Info
-	// c.GetLevel() => Error
+	// a.Level() => Error
+	// b.Level() => Info
+	// c.Level() => Error
 	// a.SetLevel(Warn)
-	// a.GetLevel() => Warn
-	// b.GetLevel() => Warn
-	// c.GetLevel() => Warn
+	// a.Level() => Warn
+	// b.Level() => Warn
+	// c.Level() => Warn
 	SyncParentLevel bool
 
 	// SubloggerHook registers a function that is called when a sublogger via
@@ -338,7 +344,7 @@ type LoggerOptions struct {
 // to a different output while keeping the root logger
 // at a higher one.
 type InterceptLogger interface {
-	// Logger is the root logger for an InterceptLogger
+	// LogImpl is the root logger for an InterceptLogger
 	LogImpl
 
 	// RegisterSink adds a SinkAdapter to the InterceptLogger
@@ -347,21 +353,21 @@ type InterceptLogger interface {
 	// DeregisterSink removes a SinkAdapter from the InterceptLogger
 	DeregisterSink(sink SinkAdapter)
 
-	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// NamedIntercept creates an InterceptLogger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
-	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// name. That way, a major subsystem can use this to decorate all its own logs
 	// without losing context.
 	NamedIntercept(name string) InterceptLogger
 
-	// Create a interceptlogger that will prepend the name string on the front of all messages.
-	// This sets the name of the logger to the value directly, unlike Named which honor
+	// ResetNamedIntercept returns an InterceptLogger that will prepend the name string on the front of all messages.
+	// This sets the name of the logger to the value directly, unlike LogImpl.Named which honor
 	// the current name as well.
 	ResetNamedIntercept(name string) InterceptLogger
 
-	// Deprecated: use StandardLogger
+	// Deprecated: use LogImpl.StandardLogger
 	StandardLoggerIntercept(opts *StandardLoggerOptions) *log.Logger
 
-	// Deprecated: use StandardWriter
+	// Deprecated: use LogImpl.StandardWriter
 	StandardWriterIntercept(opts *StandardLoggerOptions) io.Writer
 }
 
