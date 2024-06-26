@@ -226,7 +226,9 @@ const offsetIntLogger = 4
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
 func (l *intLogger) log(name string, level Level, msg string, args ...interface{}) {
-	if level < l.Level() {
+	// Return early if the requested level is set to 'off', or is a higher fidelity
+	// than the logger is configured for.
+	if level == Off || level < l.Level() {
 		return
 	}
 
