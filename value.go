@@ -9,7 +9,8 @@ type Logger struct {
 }
 
 func (v *Logger) log(level Level, msg string, args ...interface{}) {
-	// Return early if the level is set to 'off' or is a lower level than the logger is configured for.
+	// Return early if the requested level is set to 'off', or is a higher fidelity
+	// than the logger is configured for.
 	if level == Off || level < v.impl.Level() {
 		return
 	}
