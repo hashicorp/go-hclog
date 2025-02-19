@@ -563,16 +563,24 @@ func writeIndent(w *writer, str string, indent string) {
 		nl := strings.IndexByte(str, "\n"[0])
 		if nl == -1 {
 			if str != "" {
-				w.WriteString(indent)
+				if _, err := w.WriteString(indent); err != nil {
+					panic(err)
+				}
 				writeEscapedForOutput(w, str, false)
-				w.WriteString("\n")
+				if _, err := w.WriteString("\n"); err != nil {
+					panic(err)
+				}
 			}
 			return
 		}
 
-		w.WriteString(indent)
+		if _, err := w.WriteString(indent); err != nil {
+			panic(err)
+		}
 		writeEscapedForOutput(w, str[:nl], false)
-		w.WriteString("\n")
+		if _, err := w.WriteString("\n"); err != nil {
+			panic(err)
+		}
 		str = str[nl+1:]
 	}
 }
@@ -751,9 +759,11 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 
 			errEncoder := json.NewEncoder(l.writer)
 			errEncoder.SetEscapeHTML(l.jsonEscapeEnabled)
-			if err := errEncoder.Encode(plainVal); err != nil {
-				panic(err)
+			if encodeErr := errEncoder.Encode(plainVal); encodeErr != nil {
+				panic(encodeErr)
 			}
+		} else {
+			panic(err)
 		}
 	}
 }
