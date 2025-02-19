@@ -322,9 +322,11 @@ func TestInterceptLogger(t *testing.T) {
 
 		assert.Equal(t, "[INFO]  this is test: production=\"12 beans/day\"\n", rest)
 
-		logger.(OutputResettable).ResetOutput(&LoggerOptions{
+		if err := logger.(OutputResettable).ResetOutput(&LoggerOptions{
 			Output: &second,
-		})
+		}); err != nil {
+			panic(err)
+		}
 
 		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
 
