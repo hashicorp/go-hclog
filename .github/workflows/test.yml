@@ -11,7 +11,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go-version: ['1.14', '1.15', '1.16', '1.17', '1.18', '1.19']
+        go-version: 
+          - 'oldstable'
+          - 'stable'
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - name: Install Go
