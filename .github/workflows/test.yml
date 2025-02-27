@@ -53,27 +53,10 @@ jobs:
       - name: Run Tests with Coverage
         run: go test -v -coverprofile=${{ env.COVERAGE_PATH }} ./...
         shell: bash
-      - name: List Workspace Contents
-        run: ls -R "${{ github.workspace }}"
-        shell: bash
-      
-      - name: Check Coverage File
-        run: |
-          if [ -f "${{ env.COVERAGE_PATH }}" ]; then
-            echo "Coverage file exists!"
-          else
-            echo "Coverage file NOT found!"
-            exit 1
-          fi
-        shell: bash
-      
       - name: Upload coverage report
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           path: ${{ env.COVERAGE_PATH }}
           name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}    
-      - name: Display coverage report
-        run: go tool cover -func=${{ env.COVERAGE_PATH }}
-        shell: bash
       - name: Build Go
         run: go build ./...
