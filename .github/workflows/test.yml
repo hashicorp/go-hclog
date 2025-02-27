@@ -45,7 +45,7 @@ jobs:
       - name: Set Coverage Path
         run: |
             if [ "$RUNNER_OS" == "Windows" ]; then
-              echo "COVERAGE_PATH=${GITHUB_WORKSPACE}\coverage.out" >> $GITHUB_ENV
+              echo "COVERAGE_PATH=${GITHUB_WORKSPACE}\\coverage.out" >> $GITHUB_ENV
             else
               echo "COVERAGE_PATH=${GITHUB_WORKSPACE}/coverage.out" >> $GITHUB_ENV
             fi
@@ -53,6 +53,20 @@ jobs:
       - name: Run Tests with Coverage
         run: go test -v -coverprofile=${{ env.COVERAGE_PATH }} ./...
         shell: bash
+      - name: List Workspace Contents
+        run: ls -R "${{ github.workspace }}"
+        shell: bash
+      
+      - name: Check Coverage File
+        run: |
+          if [ -f "${{ env.COVERAGE_PATH }}" ]; then
+            echo "Coverage file exists!"
+          else
+            echo "Coverage file NOT found!"
+            exit 1
+          fi
+        shell: bash
+      
       - name: Upload coverage report
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
