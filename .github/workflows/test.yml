@@ -42,6 +42,8 @@ jobs:
           version: latest  
           args: --timeout=5m --verbose
           only-new-issues: true
+      - name: Ensure coverage directory exists
+        run: mkdir -p $(dirname ./coverage.out)
       - name: Run test and generate coverage report
         run: go test -v -coverprofile=.\coverage.out ./...
       - name: Upload coverage report
