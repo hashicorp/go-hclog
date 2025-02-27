@@ -42,14 +42,24 @@ jobs:
           version: latest  
           args: --timeout=5m --verbose
           only-new-issues: true
-      - name: Run test and generate coverage report
-        run: go test -v -coverprofile=$GITHUB_WORKSPACE/coverage.out ./...
+      - name: Set Coverage Path
+        run: |
+            if [ "$RUNNER_OS" == "Windows" ]; then
+              echo "COVERAGE_PATH=${GITHUB_WORKSPACE}\coverage.out" >> $GITHUB_ENV
+            else
+              echo "COVERAGE_PATH=${GITHUB_WORKSPACE}/coverage.out" >> $GITHUB_ENV
+            fi
+        shell: bash     
+      - name: Run Tests with Coverage
+        run: go test -v -coverprofile=${{ env.COVERAGE_PATH }} ./...
+        shell: bash
       - name: Upload coverage report
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
-          path: ${{ github.workspace }}/coverage.out
-          name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}
+          path: ${{ env.COVERAGE_PATH }}
+          name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}    
       - name: Display coverage report
-        run: go tool cover -func=${{ github.workspace }}/coverage.out
+        run: go tool cover -func=${{ env.COVERAGE_PATH }}
+        shell: bash
       - name: Build Go
         run: go build ./...
