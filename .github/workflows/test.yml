@@ -42,16 +42,14 @@ jobs:
           version: latest  
           args: --timeout=5m --verbose
           only-new-issues: true
-      - name: Ensure coverage directory exists
-        run: mkdir -p $(dirname ./coverage.out)
       - name: Run test and generate coverage report
-        run: go test -v -coverprofile=.\coverage.out ./...
+        run: go test -v -coverprofile=$GITHUB_WORKSPACE/coverage.out ./...
       - name: Upload coverage report
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
-          path: .\coverage.out
+          path: ${{ github.workspace }}/coverage.out
           name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}
       - name: Display coverage report
-        run: go tool cover -func=.\coverage.out
+        run: go tool cover -func=${{ github.workspace }}/coverage.out
       - name: Build Go
         run: go build ./...
