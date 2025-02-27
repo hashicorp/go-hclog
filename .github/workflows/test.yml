@@ -22,16 +22,34 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Cache GolangCI-Lint
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: golangci-lint-${{ runner.os }}-
+      - name: Cache Go Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+              ~/go/pkg/mod
+              ~/.cache/go-build
+          key: go-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: go-mod-${{ runner.os }}-
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@08e2f20817b15149a52b5b3ebe7de50aff2ba8c5
+        with:
+          version: latest  
+          args: --timeout=5m --verbose
+          only-new-issues: true
       - name: Run test and generate coverage report
-        run: go test -v -coverprofile=coverage.out ./...
+        run: go test -v -coverprofile=.\coverage.out ./...
       - name: Upload coverage report
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
-          path: coverage.out
+          path: .\coverage.out
           name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}
       - name: Display coverage report
-        run: go tool cover -func=coverage.out
+        run: go tool cover -func=.\coverage.out
       - name: Build Go
         run: go build ./...
