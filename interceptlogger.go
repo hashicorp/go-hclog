@@ -113,9 +113,7 @@ func (i *interceptLogger) ResetNamed(name string) Logger {
 // This is used to create a subsystem specific Logger.
 // Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
-	var sub interceptLogger
-
-	sub = *i
+	var sub interceptLogger = *i
 	sub.Logger = i.Logger.Named(name)
 	return &sub
 }
@@ -125,9 +123,7 @@ func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
 // within the normal hierarchy. Registered sinks will subscribe
 // to these messages as well.
 func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
-	var sub interceptLogger
-
-	sub = *i
+	var sub interceptLogger = *i
 	sub.Logger = i.Logger.ResetNamed(name)
 	return &sub
 }
@@ -136,9 +132,7 @@ func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
 // the given key/value pairs. This is used to create a context specific
 // Logger.
 func (i *interceptLogger) With(args ...interface{}) Logger {
-	var sub interceptLogger
-
-	sub = *i
+	var sub interceptLogger = *i
 
 	sub.Logger = i.Logger.With(args...)
 
@@ -192,10 +186,13 @@ func (i *interceptLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer 
 
 func (i *interceptLogger) ResetOutput(opts *LoggerOptions) error {
 	if or, ok := i.Logger.(OutputResettable); ok {
-		return or.ResetOutput(opts)
+		if err := or.ResetOutput(opts); err != nil {
+			return err
+		}
 	} else {
 		return nil
 	}
+	return nil
 }
 
 func (i *interceptLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {
