@@ -18,7 +18,7 @@ var logTimestampRegexp = regexp.MustCompile(`^[\d\s\:\/\.\+-TZ]*`)
 // and back into our Logger. This is basically the only way to
 // build upon *log.Logger.
 type stdlogAdapter struct {
-	log                      Logger
+	log                      LogImpl
 	inferLevels              bool
 	inferLevelsWithTimestamp bool
 	forceLevel               Level

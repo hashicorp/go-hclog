@@ -75,7 +75,7 @@ func init() {
 }
 
 // Make sure that intLogger is a Logger
-var _ Logger = &intLogger{}
+var _ LogImpl = &intLogger{}
 
 // intLogger is an internal logger implementation. Internal in that it is
 // defined entirely by this package.
@@ -118,12 +118,14 @@ type intLogger struct {
 	independentLevels bool
 	syncParentLevel   bool
 
-	subloggerHook func(sub Logger) Logger
+	subloggerHook func(sub LogImpl) LogImpl
 }
 
 // New returns a configured logger.
 func New(opts *LoggerOptions) Logger {
-	return newLogger(opts)
+	return Logger{
+		impl: newLogger(opts),
+	}
 }
 
 // NewSinkAdapter returns a SinkAdapter with configured settings
@@ -215,13 +217,13 @@ func newLogger(opts *LoggerOptions) *intLogger {
 	return l
 }
 
-func identityHook(logger Logger) Logger {
+func identityHook(logger LogImpl) LogImpl {
 	return logger
 }
 
 // offsetIntLogger is the stack frame offset in the call stack for the caller to
 // one of the Warn, Info, Log, etc methods.
-const offsetIntLogger = 3
+const offsetIntLogger = 4
 
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
@@ -727,6 +729,11 @@ func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
 	l.log(l.Name(), level, msg, args...)
 }
 
+// Emit the message and args at the provided level
+func (l *intLogger) LogRecord(r Record) {
+	l.log(l.Name(), r.Level, r.Msg, r.Args...)
+}
+
 // Emit the message and args at DEBUG level
 func (l *intLogger) Debug(msg string, args ...interface{}) {
 	l.log(l.Name(), Debug, msg, args...)
@@ -782,7 +789,7 @@ const MissingKey = "EXTRA_VALUE_AT_END"
 // Return a sub-Logger for which every emitted log message will contain
 // the given key/value pairs. This is used to create a context specific
 // Logger.
-func (l *intLogger) With(args ...interface{}) Logger {
+func (l *intLogger) With(args ...interface{}) LogImpl {
 	var extra interface{}
 
 	if len(args)%2 != 0 {
@@ -829,7 +836,7 @@ func (l *intLogger) With(args ...interface{}) Logger {
 
 // Create a new sub-Logger that a name decending from the current name.
 // This is used to create a subsystem specific Logger.
-func (l *intLogger) Named(name string) Logger {
+func (l *intLogger) Named(name string) LogImpl {
 	sl := l.copy()
 
 	if sl.name != "" {
@@ -844,7 +851,7 @@ func (l *intLogger) Named(name string) Logger {
 // Create a new sub-Logger with an explicit name. This ignores the current
 // name. This is used to create a standalone logger that doesn't fall
 // within the normal hierarchy.
-func (l *intLogger) ResetNamed(name string) Logger {
+func (l *intLogger) ResetNamed(name string) LogImpl {
 	sl := l.copy()
 
 	sl.name = name

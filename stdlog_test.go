@@ -206,7 +206,7 @@ func TestStdlogAdapter_ForceLevel(t *testing.T) {
 			})
 
 			s := &stdlogAdapter{
-				log:         logger,
+				log:         logger.impl,
 				forceLevel:  c.forceLevel,
 				inferLevels: c.inferLevels,
 			}
