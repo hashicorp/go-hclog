@@ -309,12 +309,8 @@ func needsQuoting(str string) bool {
 func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
 
 	if !l.disableTime {
-		if _, err := l.writer.WriteString(t.Format(l.timeFormat)); err != nil {
-			panic(err)
-		}
-		if err := l.writer.WriteByte(' '); err != nil {
-			panic(err)
-		}
+		_, _ = l.writer.WriteString(t.Format(l.timeFormat))
+		_ = l.writer.WriteByte(' ')
 	}
 
 	s, ok := _levelToBracket[level]
@@ -323,56 +319,32 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			color := _levelToColor[level]
 			color.Fprint(l.writer, s)
 		} else {
-			if _, err := l.writer.WriteString(s); err != nil {
-				panic(err)
-			}
+			_, _ = l.writer.WriteString(s)
 		}
 	} else {
-		if _, err := l.writer.WriteString("[?????]"); err != nil {
-			panic(err)
-		}
+		_, _ = l.writer.WriteString("[?????]")
 	}
 
 	if l.callerOffset > 0 {
 		if _, file, line, ok := runtime.Caller(l.callerOffset); ok {
-			if err := l.writer.WriteByte(' '); err != nil {
-				panic(err)
-			}
-			if _, err := l.writer.WriteString(trimCallerPath(file)); err != nil {
-				panic(err)
-			}
-			if err := l.writer.WriteByte(':'); err != nil {
-				panic(err)
-			}
-			if _, err := l.writer.WriteString(strconv.Itoa(line)); err != nil {
-				panic(err)
-			}
-			if err := l.writer.WriteByte(':'); err != nil {
-				panic(err)
-			}
+			_ = l.writer.WriteByte(' ')
+			_, _ = l.writer.WriteString(trimCallerPath(file))
+			_ = l.writer.WriteByte(':')
+			_, _ = l.writer.WriteString(strconv.Itoa(line))
+			_ = l.writer.WriteByte(':')
 		}
 	}
 
-	if err := l.writer.WriteByte(' '); err != nil {
-		panic(err)
-	}
+	_ = l.writer.WriteByte(' ')
 
 	if name != "" {
-		if _, err := l.writer.WriteString(name); err != nil {
-			panic(err)
-		}
+		_, _ = l.writer.WriteString(name)
 		if msg != "" {
-			if _, err := l.writer.WriteString(": "); err != nil {
-				panic(err)
-			}
-			if _, err := l.writer.WriteString(msg); err != nil {
-				panic(err)
-			}
+			_, _ = l.writer.WriteString(": ")
+			_, _ = l.writer.WriteString(msg)
 		}
 	} else if msg != "" {
-		if _, err := l.writer.WriteString(msg); err != nil {
-			panic(err)
-		}
+		_, _ = l.writer.WriteString(msg)
 	}
 
 	args = append(l.implied, args...)
@@ -391,9 +363,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			}
 		}
 
-		if err := l.writer.WriteByte(':'); err != nil {
-			panic(err)
-		}
+		_ = l.writer.WriteByte(':')
 
 		// Handle the field arguments, which come in pairs (key=val).
 	FOR:
@@ -478,83 +448,45 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			// in the value string are "normal", like if they
 			// contain ANSI escape sequences.
 			if strings.Contains(val, "\n") {
-				if _, err := l.writer.WriteString("\n  "); err != nil {
-					panic(err)
-				}
-				if _, err := l.writer.WriteString(key); err != nil {
-					panic(err)
-				}
+				_, _ = l.writer.WriteString("\n  ")
+				_, _ = l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					if _, err := l.writer.WriteString(faintFieldSeparatorWithNewLine); err != nil {
-						panic(err)
-					}
+					_, _ = l.writer.WriteString(faintFieldSeparatorWithNewLine)
 					writeIndent(l.writer, val, faintMultiLinePrefix)
 				} else {
-					if _, err := l.writer.WriteString("=\n"); err != nil {
-						panic(err)
-					}
+					_, _ = l.writer.WriteString("=\n")
 					writeIndent(l.writer, val, "  | ")
 				}
-				if _, err := l.writer.WriteString("  "); err != nil {
-					panic(err)
-				}
+				_, _ = l.writer.WriteString("  ")
 			} else if !raw && needsQuoting(val) {
-				if err := l.writer.WriteByte(' '); err != nil {
-					panic(err)
-				}
-				if _, err := l.writer.WriteString(key); err != nil {
-					panic(err)
-				}
+				_ = l.writer.WriteByte(' ')
+				_, _ = l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					if _, err := l.writer.WriteString(faintFieldSeparator); err != nil {
-						panic(err)
-					}
+					_, _ = l.writer.WriteString(faintFieldSeparator)
 				} else {
-					if err := l.writer.WriteByte('='); err != nil {
-						panic(err)
-					}
+					_ = l.writer.WriteByte('=')
 				}
-				if err := l.writer.WriteByte('"'); err != nil {
-					panic(err)
-				}
+				_ = l.writer.WriteByte('"')
 				writeEscapedForOutput(l.writer, val, true)
-				if err := l.writer.WriteByte('"'); err != nil {
-					panic(err)
-				}
+				_ = l.writer.WriteByte('"')
 			} else {
-				if err := l.writer.WriteByte(' '); err != nil {
-					panic(err)
-				}
-				if _, err := l.writer.WriteString(key); err != nil {
-					panic(err)
-				}
+				_ = l.writer.WriteByte(' ')
+				_, _ = l.writer.WriteString(key)
 				if l.fieldColor != ColorOff {
-					if _, err := l.writer.WriteString(faintFieldSeparator); err != nil {
-						panic(err)
-					}
+					_, _ = l.writer.WriteString(faintFieldSeparator)
 				} else {
-					if err := l.writer.WriteByte('='); err != nil {
-						panic(err)
-					}
+					_ = l.writer.WriteByte('=')
 				}
-				if _, err := l.writer.WriteString(val); err != nil {
-					panic(err)
-				}
+				_, _ = l.writer.WriteString(val)
 			}
 		}
 	}
 
-	if _, err := l.writer.WriteString("\n"); err != nil {
-		panic(err)
-	}
+	_, _ = l.writer.WriteString("\n")
 
 	if stacktrace != "" {
-		if _, err := l.writer.WriteString(string(stacktrace)); err != nil {
-			panic(err)
-		}
-		if _, err := l.writer.WriteString("\n"); err != nil {
-			panic(err)
-		}
+		_, _ = l.writer.WriteString(string(stacktrace))
+		_, _ = l.writer.WriteString("\n")
 	}
 }
 
@@ -563,24 +495,16 @@ func writeIndent(w *writer, str string, indent string) {
 		nl := strings.IndexByte(str, "\n"[0])
 		if nl == -1 {
 			if str != "" {
-				if _, err := w.WriteString(indent); err != nil {
-					panic(err)
-				}
+				_, _ = w.WriteString(indent)
 				writeEscapedForOutput(w, str, false)
-				if _, err := w.WriteString("\n"); err != nil {
-					panic(err)
-				}
+				_, _ = w.WriteString("\n")
 			}
 			return
 		}
 
-		if _, err := w.WriteString(indent); err != nil {
-			panic(err)
-		}
+		_, _ = w.WriteString(indent)
 		writeEscapedForOutput(w, str[:nl], false)
-		if _, err := w.WriteString("\n"); err != nil {
-			panic(err)
-		}
+		_, _ = w.WriteString("\n")
 		str = str[nl+1:]
 	}
 }
@@ -607,9 +531,7 @@ var bufPool = sync.Pool{
 
 func writeEscapedForOutput(w io.Writer, str string, escapeQuotes bool) {
 	if !needsEscaping(str) {
-		if _, err := w.Write([]byte(str)); err != nil {
-			panic(err)
-		}
+		_, _ = w.Write([]byte(str))
 		return
 	}
 
@@ -663,9 +585,7 @@ func writeEscapedForOutput(w io.Writer, str string, escapeQuotes bool) {
 		}
 	}
 
-	if _, err := w.Write(bb.Bytes()); err != nil {
-		panic(err)
-	}
+	_, _ = w.Write(bb.Bytes())
 }
 
 func (l *intLogger) renderSlice(v reflect.Value) string {
@@ -751,19 +671,14 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 
 	encoder := json.NewEncoder(l.writer)
 	encoder.SetEscapeHTML(l.jsonEscapeEnabled)
-	err := encoder.Encode(vals)
-	if err != nil {
+	if err := encoder.Encode(vals); err != nil {
 		if _, ok := err.(*json.UnsupportedTypeError); ok {
 			plainVal := l.jsonMapEntry(t, name, level, msg)
 			plainVal["@warn"] = errJsonUnsupportedTypeMsg
 
 			errEncoder := json.NewEncoder(l.writer)
 			errEncoder.SetEscapeHTML(l.jsonEscapeEnabled)
-			if encodeErr := errEncoder.Encode(plainVal); encodeErr != nil {
-				panic(encodeErr)
-			}
-		} else {
-			panic(err)
+			_ = errEncoder.Encode(plainVal)
 		}
 	}
 }
@@ -944,10 +859,7 @@ func (l *intLogger) ResetOutput(opts *LoggerOptions) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	if err := l.resetOutput(opts); err != nil {
-		return err
-	}
-	return nil
+	return l.resetOutput(opts)
 }
 
 func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {
@@ -965,10 +877,7 @@ func (l *intLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushabl
 		return err
 	}
 
-	if err := l.resetOutput(opts); err != nil {
-		return err
-	}
-	return nil
+	return l.resetOutput(opts)
 }
 
 func (l *intLogger) resetOutput(opts *LoggerOptions) error {

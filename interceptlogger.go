@@ -186,13 +186,10 @@ func (i *interceptLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer 
 
 func (i *interceptLogger) ResetOutput(opts *LoggerOptions) error {
 	if or, ok := i.Logger.(OutputResettable); ok {
-		if err := or.ResetOutput(opts); err != nil {
-			return err
-		}
+		return or.ResetOutput(opts)
 	} else {
 		return nil
 	}
-	return nil
 }
 
 func (i *interceptLogger) ResetOutputWithFlush(opts *LoggerOptions, flushable Flushable) error {

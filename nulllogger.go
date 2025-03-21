@@ -5,7 +5,6 @@ package hclog
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 )
 
@@ -59,5 +58,5 @@ func (l *nullLogger) StandardLogger(opts *StandardLoggerOptions) *log.Logger {
 }
 
 func (l *nullLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
