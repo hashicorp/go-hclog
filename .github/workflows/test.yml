@@ -47,7 +47,10 @@ jobs:
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           path: coverage.out
-          name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}    
+          name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}
+      - name: Display coverage report
+        run: go tool cover -func=coverage.out
+        shell: cmd    
       - name: Build Go
         run: |
            cd hclogvet
