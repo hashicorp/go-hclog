@@ -2,9 +2,7 @@ name: go-hclog
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ test ]
 
 jobs:
   test:
