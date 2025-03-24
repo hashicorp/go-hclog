@@ -49,8 +49,8 @@ jobs:
           path: coverage.out
           name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}
       - name: Display coverage report
-        run: go tool cover -func=coverage.out
-        shell: cmd    
+        if: ${{runner.os != 'Windows'}}
+        run: go tool cover -func=coverage.out   
       - name: Build Go
         run: |
            cd hclogvet
