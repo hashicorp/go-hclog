@@ -59,4 +59,8 @@ jobs:
           path: ${{ env.COVERAGE_PATH }}
           name: Coverage-report-${{ matrix.os }}-${{ matrix.go-version }}    
       - name: Build Go
-        run: go build ./...
+        run: |
+           cd hclogvet
+           go build ./...
+           cd example 
+           go build ./...
