@@ -813,7 +813,8 @@ func (l *intLogger) With(args ...interface{}) Logger {
 	// Sort keys to be consistent
 	sort.Strings(keys)
 
-	sl.implied = make([]interface{}, 0, len(l.implied)+len(args))
+	// Don't allocate for MissingKey+extra, they aren't expected to be set often.
+	sl.implied = make([]interface{}, 0, 2*len(result))
 	for _, k := range keys {
 		sl.implied = append(sl.implied, k)
 		sl.implied = append(sl.implied, result[k])
