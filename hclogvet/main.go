@@ -5,6 +5,7 @@ package main
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 	"strings"
 
@@ -64,6 +65,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 
 			if _, ok := checkHCLogFunc[fun.Sel.Name]; !ok {
+				return true
+			}
+
+			if call.Ellipsis != token.NoPos {
+				// this is a variadic function, we don't know how many args at this level
 				return true
 			}
 
