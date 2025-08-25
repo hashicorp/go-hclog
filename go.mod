@@ -4,7 +4,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.11.0
 )
 
 require (
