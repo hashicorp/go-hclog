@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -17,17 +17,17 @@ func NewNullLogger() Logger {
 
 type nullLogger struct{}
 
-func (l *nullLogger) Log(level Level, msg string, args ...interface{}) {}
+func (l *nullLogger) Log(level Level, msg string, args ...any) {}
 
-func (l *nullLogger) Trace(msg string, args ...interface{}) {}
+func (l *nullLogger) Trace(msg string, args ...any) {}
 
-func (l *nullLogger) Debug(msg string, args ...interface{}) {}
+func (l *nullLogger) Debug(msg string, args ...any) {}
 
-func (l *nullLogger) Info(msg string, args ...interface{}) {}
+func (l *nullLogger) Info(msg string, args ...any) {}
 
-func (l *nullLogger) Warn(msg string, args ...interface{}) {}
+func (l *nullLogger) Warn(msg string, args ...any) {}
 
-func (l *nullLogger) Error(msg string, args ...interface{}) {}
+func (l *nullLogger) Error(msg string, args ...any) {}
 
 func (l *nullLogger) IsTrace() bool { return false }
 
@@ -39,9 +39,9 @@ func (l *nullLogger) IsWarn() bool { return false }
 
 func (l *nullLogger) IsError() bool { return false }
 
-func (l *nullLogger) ImpliedArgs() []interface{} { return []interface{}{} }
+func (l *nullLogger) ImpliedArgs() []any { return []any{} }
 
-func (l *nullLogger) With(args ...interface{}) Logger { return l }
+func (l *nullLogger) With(args ...any) Logger { return l }
 
 func (l *nullLogger) Name() string { return "" }
 

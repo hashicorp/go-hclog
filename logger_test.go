@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -80,7 +80,7 @@ func TestLogger(t *testing.T) {
 			Output: &buf,
 		})
 
-		logger.Info("this is test", "who", "programmer", "why", []interface{}{"testing", "dev", 1, uint64(5), []int{3, 4}})
+		logger.Info("this is test", "who", "programmer", "why", []any{"testing", "dev", 1, uint64(5), []int{3, 4}})
 
 		str := buf.String()
 		dataIdx := strings.IndexByte(str, ' ')
@@ -568,9 +568,9 @@ func TestLogger(t *testing.T) {
 		str := first.String()
 		assert.Empty(t, str)
 
-		logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
+		assert.NoError(t, logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
 			Output: &second,
-		}, &first)
+		}, &first))
 
 		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
 
@@ -848,7 +848,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -872,7 +872,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -900,7 +900,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -926,7 +926,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -949,7 +949,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -975,7 +975,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1008,7 +1008,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1038,7 +1038,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1061,7 +1061,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1083,7 +1083,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1125,7 +1125,7 @@ func TestLogger_JSON(t *testing.T) {
 			t.Fatalf("found %q (%v) in json bytes: %q", needle, needle, b)
 		}
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1153,7 +1153,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1183,7 +1183,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1206,7 +1206,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1246,7 +1246,7 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -1281,7 +1281,7 @@ func (c *customErrText) Error() string {
 
 // text.Marshaler impl.
 func (c customErrText) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("text-marshaler: %s", c.Message)), nil
+	return fmt.Appendf(nil, fmt.Sprintf("text-marshaler: %s", c.Message)), nil
 }
 
 func BenchmarkLogger(b *testing.B) {

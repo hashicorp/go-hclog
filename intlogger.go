@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -110,9 +110,9 @@ type intLogger struct {
 	headerColor ColorOption
 	fieldColor  ColorOption
 
-	implied []interface{}
+	implied []any
 
-	exclude func(level Level, msg string, args ...interface{}) bool
+	exclude func(level Level, msg string, args ...any) bool
 
 	// create subloggers with their own level setting
 	independentLevels bool
@@ -225,7 +225,7 @@ const offsetIntLogger = 3
 
 // Log a message and a set of key/value pairs if the given level is at
 // or more severe that the threshold configured in the Logger.
-func (l *intLogger) log(name string, level Level, msg string, args ...interface{}) {
+func (l *intLogger) log(name string, level Level, msg string, args ...any) {
 	if level < l.GetLevel() {
 		return
 	}
@@ -245,7 +245,7 @@ func (l *intLogger) log(name string, level Level, msg string, args ...interface{
 		l.logPlain(t, name, level, msg, args...)
 	}
 
-	l.writer.Flush(level)
+	_ = l.writer.Flush(level)
 }
 
 // Cleanup a path by returning the last 2 segments of the path only.
@@ -306,7 +306,7 @@ func needsQuoting(str string) bool {
 //  2. Color the whole log line, based on the level.
 //  3. Color only the header (level) part of the log line.
 //  4. Color both the header and fields of the log line.
-func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...interface{}) {
+func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, args ...any) {
 
 	if !l.disableTime {
 		_, _ = l.writer.WriteString(t.Format(l.timeFormat))
@@ -317,7 +317,7 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 	if ok {
 		if l.headerColor != ColorOff {
 			color := _levelToColor[level]
-			color.Fprint(l.writer, s)
+			_, _ = color.Fprint(l.writer, s)
 		} else {
 			_, _ = l.writer.WriteString(s)
 		}
@@ -524,7 +524,7 @@ const (
 )
 
 var bufPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return new(bytes.Buffer)
 	},
 }
@@ -625,7 +625,7 @@ func (l *intLogger) renderSlice(v reflect.Value) string {
 }
 
 // JSON logging function
-func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, args ...interface{}) {
+func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, args ...any) {
 	vals := l.jsonMapEntry(t, name, level, msg)
 	args = append(l.implied, args...)
 
@@ -683,8 +683,8 @@ func (l *intLogger) logJSON(t time.Time, name string, level Level, msg string, a
 	}
 }
 
-func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg string) map[string]interface{} {
-	vals := map[string]interface{}{
+func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg string) map[string]any {
+	vals := map[string]any{
 		"@message": msg,
 	}
 	if !l.disableTime {
@@ -722,32 +722,32 @@ func (l intLogger) jsonMapEntry(t time.Time, name string, level Level, msg strin
 }
 
 // Emit the message and args at the provided level
-func (l *intLogger) Log(level Level, msg string, args ...interface{}) {
+func (l *intLogger) Log(level Level, msg string, args ...any) {
 	l.log(l.Name(), level, msg, args...)
 }
 
 // Emit the message and args at DEBUG level
-func (l *intLogger) Debug(msg string, args ...interface{}) {
+func (l *intLogger) Debug(msg string, args ...any) {
 	l.log(l.Name(), Debug, msg, args...)
 }
 
 // Emit the message and args at TRACE level
-func (l *intLogger) Trace(msg string, args ...interface{}) {
+func (l *intLogger) Trace(msg string, args ...any) {
 	l.log(l.Name(), Trace, msg, args...)
 }
 
 // Emit the message and args at INFO level
-func (l *intLogger) Info(msg string, args ...interface{}) {
+func (l *intLogger) Info(msg string, args ...any) {
 	l.log(l.Name(), Info, msg, args...)
 }
 
 // Emit the message and args at WARN level
-func (l *intLogger) Warn(msg string, args ...interface{}) {
+func (l *intLogger) Warn(msg string, args ...any) {
 	l.log(l.Name(), Warn, msg, args...)
 }
 
 // Emit the message and args at ERROR level
-func (l *intLogger) Error(msg string, args ...interface{}) {
+func (l *intLogger) Error(msg string, args ...any) {
 	l.log(l.Name(), Error, msg, args...)
 }
 
@@ -781,8 +781,8 @@ const MissingKey = "EXTRA_VALUE_AT_END"
 // Return a sub-Logger for which every emitted log message will contain
 // the given key/value pairs. This is used to create a context specific
 // Logger.
-func (l *intLogger) With(args ...interface{}) Logger {
-	var extra interface{}
+func (l *intLogger) With(args ...any) Logger {
+	var extra any
 
 	if len(args)%2 != 0 {
 		extra = args[len(args)-1]
@@ -791,7 +791,7 @@ func (l *intLogger) With(args ...interface{}) Logger {
 
 	sl := l.copy()
 
-	result := make(map[string]interface{}, len(l.implied)+len(args))
+	result := make(map[string]any, len(l.implied)+len(args))
 	keys := make([]string, 0, len(l.implied)+len(args))
 
 	// Read existing args, store map and key for consistent sorting
@@ -814,7 +814,7 @@ func (l *intLogger) With(args ...interface{}) Logger {
 	sort.Strings(keys)
 
 	// Don't allocate for MissingKey+extra, they aren't expected to be set often.
-	sl.implied = make([]interface{}, 0, 2*len(result))
+	sl.implied = make([]any, 0, 2*len(result))
 	for _, k := range keys {
 		sl.implied = append(sl.implied, k)
 		sl.implied = append(sl.implied, result[k])
@@ -977,12 +977,12 @@ func (l *intLogger) StandardWriter(opts *StandardLoggerOptions) io.Writer {
 }
 
 // Accept implements the SinkAdapter interface
-func (i *intLogger) Accept(name string, level Level, msg string, args ...interface{}) {
+func (i *intLogger) Accept(name string, level Level, msg string, args ...any) {
 	i.log(name, level, msg, args...)
 }
 
 // ImpliedArgs returns the loggers implied args
-func (i *intLogger) ImpliedArgs() []interface{} {
+func (i *intLogger) ImpliedArgs() []any {
 	return i.implied
 }
 

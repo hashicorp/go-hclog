@@ -34,7 +34,7 @@ var (
 		"runtime.main",
 	}
 	_stacktracePool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return newProgramCounters(64)
 		},
 	}

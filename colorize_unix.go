@@ -1,8 +1,7 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 //go:build !windows
-// +build !windows
 
 package hclog
 
