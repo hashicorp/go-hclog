@@ -1281,7 +1281,7 @@ func (c *customErrText) Error() string {
 
 // text.Marshaler impl.
 func (c customErrText) MarshalText() ([]byte, error) {
-	return fmt.Appendf(nil, fmt.Sprintf("text-marshaler: %s", c.Message)), nil
+	return fmt.Append(nil, fmt.Sprintf("text-marshaler: %s", c.Message)), nil
 }
 
 func BenchmarkLogger(b *testing.B) {
