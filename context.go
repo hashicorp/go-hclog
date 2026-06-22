@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -11,7 +11,7 @@ import (
 // with FromContext. The optional args can be set with the same syntax as
 // Logger.With to set fields on the inserted logger. This will not modify
 // the logger argument in-place.
-func WithContext(ctx context.Context, logger Logger, args ...interface{}) context.Context {
+func WithContext(ctx context.Context, logger Logger, args ...any) context.Context {
 	// While we could call logger.With even with zero args, we have this
 	// check to avoid unnecessary allocations around creating a copy of a
 	// logger.

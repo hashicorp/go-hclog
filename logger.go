@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -51,11 +51,11 @@ const (
 // processing a value of this type, the logger automatically treats the first
 // argument as a Printf formatting string and passes the rest as the values
 // to be formatted. For example: L.Info(Fmt{"%d beans/day", beans}).
-type Format []interface{}
+type Format []any
 
 // Fmt returns a Format type. This is a convenience function for creating a Format
 // type.
-func Fmt(str string, args ...interface{}) Format {
+func Fmt(str string, args ...any) Format {
 	return append(Format{str}, args...)
 }
 
@@ -150,22 +150,22 @@ type Logger interface {
 	// keys must be strings
 	// vals can be any type, but display is implementation specific
 	// Emit a message and key/value pairs at a provided log level
-	Log(level Level, msg string, args ...interface{})
+	Log(level Level, msg string, args ...any)
 
 	// Emit a message and key/value pairs at the TRACE level
-	Trace(msg string, args ...interface{})
+	Trace(msg string, args ...any)
 
 	// Emit a message and key/value pairs at the DEBUG level
-	Debug(msg string, args ...interface{})
+	Debug(msg string, args ...any)
 
 	// Emit a message and key/value pairs at the INFO level
-	Info(msg string, args ...interface{})
+	Info(msg string, args ...any)
 
 	// Emit a message and key/value pairs at the WARN level
-	Warn(msg string, args ...interface{})
+	Warn(msg string, args ...any)
 
 	// Emit a message and key/value pairs at the ERROR level
-	Error(msg string, args ...interface{})
+	Error(msg string, args ...any)
 
 	// Indicate if TRACE logs would be emitted. This and the other Is* guards
 	// are used to elide expensive logging code based on the current level.
@@ -184,10 +184,10 @@ type Logger interface {
 	IsError() bool
 
 	// ImpliedArgs returns With key/value pairs
-	ImpliedArgs() []interface{}
+	ImpliedArgs() []any
 
 	// Creates a sublogger that will always have the given key/value pairs
-	With(args ...interface{}) Logger
+	With(args ...any) Logger
 
 	// Returns the Name of the logger
 	Name() string
@@ -299,7 +299,7 @@ type LoggerOptions struct {
 	// should not be logged.
 	// This is useful when interacting with a system that you wish to suppress the log
 	// message for (because it's too noisy, etc)
-	Exclude func(level Level, msg string, args ...interface{}) bool
+	Exclude func(level Level, msg string, args ...any) bool
 
 	// IndependentLevels causes subloggers to be created with an independent
 	// copy of this logger's level. This means that using SetLevel on this
@@ -369,7 +369,7 @@ type InterceptLogger interface {
 // SinkAdapter describes the interface that must be implemented
 // in order to Register a new sink to an InterceptLogger
 type SinkAdapter interface {
-	Accept(name string, level Level, msg string, args ...interface{})
+	Accept(name string, level Level, msg string, args ...any)
 }
 
 // Flushable represents a method for flushing an output buffer. It can be used

@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -103,7 +103,7 @@ func (l *logWriter) Write(b []byte) (int, error) {
 
 // Takes a standard library logger and returns a Logger that will write to it
 func FromStandardLogger(l *log.Logger, opts *LoggerOptions) Logger {
-	var dl LoggerOptions = *opts
+	var dl = *opts
 
 	// Use the time format that log.Logger uses
 	dl.DisableTime = true

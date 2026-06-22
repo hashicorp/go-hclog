@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -201,7 +201,7 @@ func TestInterceptLogger(t *testing.T) {
 
 		b := sbuf.Bytes()
 
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(b, &raw); err != nil {
 			t.Fatal(err)
 		}
@@ -352,9 +352,9 @@ func TestInterceptLogger(t *testing.T) {
 		str := first.String()
 		assert.Empty(t, str)
 
-		logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
+		assert.NoError(t, logger.(OutputResettable).ResetOutputWithFlush(&LoggerOptions{
 			Output: &second,
-		}, &first)
+		}, &first))
 
 		logger.Info("this is another test", "production", Fmt("%d beans/day", 13))
 

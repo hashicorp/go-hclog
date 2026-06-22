@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2017, 2025
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MIT
 
 package hclog
@@ -38,7 +38,7 @@ func NewInterceptLogger(opts *LoggerOptions) InterceptLogger {
 	return intercept
 }
 
-func (i *interceptLogger) Log(level Level, msg string, args ...interface{}) {
+func (i *interceptLogger) Log(level Level, msg string, args ...any) {
 	i.log(level, msg, args...)
 }
 
@@ -46,7 +46,7 @@ func (i *interceptLogger) Log(level Level, msg string, args ...interface{}) {
 // all called Log then direct calls to Log would have a different stack frame
 // depth. By having all the methods call the same helper we ensure the stack
 // frame depth is the same.
-func (i *interceptLogger) log(level Level, msg string, args ...interface{}) {
+func (i *interceptLogger) log(level Level, msg string, args ...any) {
 	i.Logger.Log(level, msg, args...)
 	if atomic.LoadInt32(i.sinkCount) == 0 {
 		return
@@ -60,34 +60,34 @@ func (i *interceptLogger) log(level Level, msg string, args ...interface{}) {
 }
 
 // Emit the message and args at TRACE level to log and sinks
-func (i *interceptLogger) Trace(msg string, args ...interface{}) {
+func (i *interceptLogger) Trace(msg string, args ...any) {
 	i.log(Trace, msg, args...)
 }
 
 // Emit the message and args at DEBUG level to log and sinks
-func (i *interceptLogger) Debug(msg string, args ...interface{}) {
+func (i *interceptLogger) Debug(msg string, args ...any) {
 	i.log(Debug, msg, args...)
 }
 
 // Emit the message and args at INFO level to log and sinks
-func (i *interceptLogger) Info(msg string, args ...interface{}) {
+func (i *interceptLogger) Info(msg string, args ...any) {
 	i.log(Info, msg, args...)
 }
 
 // Emit the message and args at WARN level to log and sinks
-func (i *interceptLogger) Warn(msg string, args ...interface{}) {
+func (i *interceptLogger) Warn(msg string, args ...any) {
 	i.log(Warn, msg, args...)
 }
 
 // Emit the message and args at ERROR level to log and sinks
-func (i *interceptLogger) Error(msg string, args ...interface{}) {
+func (i *interceptLogger) Error(msg string, args ...any) {
 	i.log(Error, msg, args...)
 }
 
-func (i *interceptLogger) retrieveImplied(args ...interface{}) []interface{} {
-	top := i.Logger.ImpliedArgs()
+func (i *interceptLogger) retrieveImplied(args ...any) []any {
+	top := i.ImpliedArgs()
 
-	cp := make([]interface{}, len(top)+len(args))
+	cp := make([]any, len(top)+len(args))
 	copy(cp, top)
 	copy(cp[len(top):], args)
 
@@ -113,7 +113,7 @@ func (i *interceptLogger) ResetNamed(name string) Logger {
 // This is used to create a subsystem specific Logger.
 // Registered sinks will subscribe to these messages as well.
 func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
-	var sub interceptLogger = *i
+	var sub = *i
 	sub.Logger = i.Logger.Named(name)
 	return &sub
 }
@@ -123,7 +123,7 @@ func (i *interceptLogger) NamedIntercept(name string) InterceptLogger {
 // within the normal hierarchy. Registered sinks will subscribe
 // to these messages as well.
 func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
-	var sub interceptLogger = *i
+	var sub = *i
 	sub.Logger = i.Logger.ResetNamed(name)
 	return &sub
 }
@@ -131,8 +131,8 @@ func (i *interceptLogger) ResetNamedIntercept(name string) InterceptLogger {
 // Return a sub-Logger for which every emitted log message will contain
 // the given key/value pairs. This is used to create a context specific
 // Logger.
-func (i *interceptLogger) With(args ...interface{}) Logger {
-	var sub interceptLogger = *i
+func (i *interceptLogger) With(args ...any) Logger {
+	var sub = *i
 
 	sub.Logger = i.Logger.With(args...)
 
