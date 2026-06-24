@@ -43,7 +43,7 @@ jobs:
           args: --timeout=5m --verbose
           only-new-issues: true
       - name: Run Tests with coverage
-        run: go test -v -coverprofile="coverage.out" ./...
+        run: go test -v -race -coverprofile="coverage.out" ./...
       - name: Upload coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
