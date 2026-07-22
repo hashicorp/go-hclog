@@ -194,12 +194,12 @@ type Logger interface {
 
 	// Create a logger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
-	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// name. That way, a major subsystem can use this to decorate all its own logs
 	// without losing context.
 	Named(name string) Logger
 
 	// Create a logger that will prepend the name string on the front of all messages.
-	// This sets the name of the logger to the value directly, unlike Named which honor
+	// This sets the name of the logger to the value directly, unlike Named which honors
 	// the current name as well.
 	ResetNamed(name string) Logger
 
@@ -307,7 +307,7 @@ type LoggerOptions struct {
 	// will not affect the parent or sibling loggers.
 	IndependentLevels bool
 
-	// When set, changing the level of a logger effects only it's direct sub-loggers
+	// When set, changing the level of a logger affects only its direct sub-loggers
 	// rather than all sub-loggers. For example:
 	// a := logger.Named("a")
 	// a.SetLevel(Error)
@@ -348,14 +348,14 @@ type InterceptLogger interface {
 	// DeregisterSink removes a SinkAdapter from the InterceptLogger
 	DeregisterSink(sink SinkAdapter)
 
-	// Create a interceptlogger that will prepend the name string on the front of all messages.
+	// Create an interceptlogger that will prepend the name string on the front of all messages.
 	// If the logger already has a name, the new value will be appended to the current
-	// name. That way, a major subsystem can use this to decorate all it's own logs
+	// name. That way, a major subsystem can use this to decorate all its own logs
 	// without losing context.
 	NamedIntercept(name string) InterceptLogger
 
-	// Create a interceptlogger that will prepend the name string on the front of all messages.
-	// This sets the name of the logger to the value directly, unlike Named which honor
+	// Create an interceptlogger that will prepend the name string on the front of all messages.
+	// This sets the name of the logger to the value directly, unlike Named which honors
 	// the current name as well.
 	ResetNamedIntercept(name string) InterceptLogger
 

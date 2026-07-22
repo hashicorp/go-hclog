@@ -14,7 +14,7 @@ import (
 // beginning of inputs.
 var logTimestampRegexp = regexp.MustCompile(`^[\d\s\:\/\.\+-TZ]*`)
 
-// Provides a io.Writer to shim the data out of *log.Logger
+// Provides an io.Writer to shim the data out of *log.Logger
 // and back into our Logger. This is basically the only way to
 // build upon *log.Logger.
 type stdlogAdapter struct {
