@@ -830,6 +830,10 @@ func (l *intLogger) With(args ...any) Logger {
 // Create a new sub-Logger that a name decending from the current name.
 // This is used to create a subsystem specific Logger.
 func (l *intLogger) Named(name string) Logger {
+	// Empty name would append a trailing "." (or set an empty name); treat as no-op.
+	if name == "" {
+		return l
+	}
 	sl := l.copy()
 
 	if sl.name != "" {
