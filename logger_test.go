@@ -407,7 +407,7 @@ func TestLogger(t *testing.T) {
 		rootLogger.Info("root_test", "bird", 10)
 		output := buf.String()
 		dataIdx := strings.IndexByte(output, ' ')
-		assert.Equal(t, "[INFO]  with_test: root_test: a=1 b=2 c=3 bird=10\n", output[dataIdx+1:])
+		assert.Equal(t, "[INFO]  with_test: root_test: a=1 b=2 bird=10 c=3\n", output[dataIdx+1:])
 
 		buf.Reset()
 
@@ -453,7 +453,7 @@ func TestLogger(t *testing.T) {
 		rootLogger.Info("root_test", "bird", 10)
 		output = buf.String()
 		dataIdx := strings.IndexByte(output, ' ')
-		assert.Equal(t, "[INFO]  with_test: root_test: a=1 b=2 c=3 bird=10\n", output[dataIdx+1:])
+		assert.Equal(t, "[INFO]  with_test: root_test: a=1 b=2 bird=10 c=3\n", output[dataIdx+1:])
 
 		buf.Reset()
 
@@ -494,7 +494,7 @@ func TestLogger(t *testing.T) {
 		dataIdx := strings.IndexByte(str, ' ')
 		rest := str[dataIdx+1:]
 
-		assert.Equal(t, "[INFO]  test: this is test: bytes=0xc perms=0755 bits=0b101\n", rest)
+		assert.Equal(t, "[INFO]  test: this is test: bits=0b101 bytes=0xc perms=0755\n", rest)
 	})
 
 	t.Run("supports quote formatting", func(t *testing.T) {
@@ -519,7 +519,7 @@ func TestLogger(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		assert.Equal(t, "[INFO]  test: this is test: "+
-			"unquoted=unquoted quoted=\"quoted\" "+
+			"quoted=\"quoted\" unquoted=unquoted "+
 			"unsafeq=\"foo\\nbar\\bbaz\\xffa\"\n", rest)
 	})
 
@@ -1230,6 +1230,27 @@ func TestLogger_JSON(t *testing.T) {
 		rest := str[dataIdx+1:]
 
 		assert.Equal(t, "[INFO]  test: who=programmer why=testing\n", rest)
+	})
+
+	t.Run("sorts field keys for stable plain output", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		logger := New(&LoggerOptions{
+			Name:   "test",
+			Output: &buf,
+		})
+
+		logger.Info("retry attempt failed",
+			"count", 1,
+			"error", "unavailable",
+			"action", "scale_out",
+			"tag", "hashi-batch")
+
+		str := buf.String()
+		dataIdx := strings.IndexByte(str, ' ')
+		rest := str[dataIdx+1:]
+
+		assert.Equal(t, "[INFO]  test: retry attempt failed: action=scale_out count=1 error=unavailable tag=hashi-batch\n", rest)
 	})
 
 	t.Run("disable json escape when log special character", func(t *testing.T) {

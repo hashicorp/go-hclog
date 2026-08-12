@@ -363,6 +363,8 @@ func (l *intLogger) logPlain(t time.Time, name string, level Level, msg string, 
 			}
 		}
 
+		args = sortLogArgs(args)
+
 		_ = l.writer.WriteByte(':')
 
 		// Handle the field arguments, which come in pairs (key=val).
@@ -777,6 +779,53 @@ func (l *intLogger) IsError() bool {
 }
 
 const MissingKey = "EXTRA_VALUE_AT_END"
+
+// sortLogArgs orders key/value pairs by key so unstructured (plain text)
+// log lines stay comparable across calls. MissingKey pairs stay last.
+func sortLogArgs(args []any) []any {
+	n := len(args) / 2
+	if n < 2 {
+		return args
+	}
+
+	type pair struct {
+		key any
+		val any
+		ks  string
+	}
+
+	pairs := make([]pair, 0, n)
+	extras := make([]pair, 0)
+	for i := 0; i < n; i++ {
+		k := args[i*2]
+		v := args[i*2+1]
+		var ks string
+		if s, ok := k.(string); ok {
+			ks = s
+		} else {
+			ks = fmt.Sprintf("%s", k)
+		}
+		p := pair{key: k, val: v, ks: ks}
+		if ks == MissingKey {
+			extras = append(extras, p)
+			continue
+		}
+		pairs = append(pairs, p)
+	}
+
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairs[i].ks < pairs[j].ks
+	})
+
+	out := make([]any, 0, len(args))
+	for _, p := range pairs {
+		out = append(out, p.key, p.val)
+	}
+	for _, p := range extras {
+		out = append(out, p.key, p.val)
+	}
+	return out
+}
 
 // Return a sub-Logger for which every emitted log message will contain
 // the given key/value pairs. This is used to create a context specific

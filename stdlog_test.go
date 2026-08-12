@@ -239,7 +239,7 @@ func TestFromStandardLogger(t *testing.T) {
 
 	actual := buf.String()
 	suffix := fmt.Sprintf(
-		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
+		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: count=1 name=tester\n",
 		filepath.Base(file), line-1)
 	require.Equal(t, suffix, actual[25:])
 
@@ -268,7 +268,7 @@ func TestFromStandardLogger_helper(t *testing.T) {
 
 	actual := buf.String()
 	suffix := fmt.Sprintf(
-		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: name=tester count=1\n",
+		"[INFO]  go-hclog/%s:%d: hclog-inner: this is a test: count=1 name=tester\n",
 		filepath.Base(file), line-1)
 	require.Equal(t, suffix, actual[25:])
 
