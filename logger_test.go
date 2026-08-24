@@ -1114,13 +1114,36 @@ func TestLogger_JSON(t *testing.T) {
 
 		b := buf.Bytes()
 
-		// Assert the JSON only contains valid utf8 strings with the
-		// illegal byte replaced with the utf8 replacement character,
-		// and not invalid json with byte(255)
-		// Note: testify/assert.Contains did not work here
-		if needle := []byte(`\ufffda`); !bytes.Contains(b, needle) {
-			t.Fatalf("could not find %q (%v) in json bytes: %q", needle, needle, b)
+		// Go 1.27.0 introduced new JSON encoding functionality, so this test
+		// needs to handle the change. This is why we check what version of Go
+		// we are being tested under.
+		//
+		// TODO: remove this version logic when Go 1.28.0 is released and 1.26
+		// becomes unsupported.
+		minorVersionFn := func() int {
+			parts := strings.SplitN(strings.TrimPrefix(runtime.Version(), "go"), ".", 3)
+			if len(parts) < 2 {
+				return 0
+			}
+			minor, _ := strconv.Atoi(parts[1])
+			return minor
 		}
+
+		// Assert the JSON only contains valid utf8 strings with the illegal
+		// byte replaced with the utf8 replacement character, and not invalid
+		// json with byte(255).
+		//
+		// Note: testify/assert.Contains did not work here. 
+		if goV := minorVersionFn(); goV < 27 {
+			if needle := []byte(`\ufffda`); !bytes.Contains(b, needle) {
+				t.Fatalf("could not find %q (%v) in json bytes: %q", needle, needle, b)
+			}
+		} else {
+			if needle := []byte("\ufffda"); !bytes.Contains(b, needle) {
+				t.Fatalf("could not find %q (%v) in json bytes: %q", needle, needle, b)
+			}
+		}
+
 		if needle := []byte{255, 'a'}; bytes.Contains(b, needle) {
 			t.Fatalf("found %q (%v) in json bytes: %q", needle, needle, b)
 		}
