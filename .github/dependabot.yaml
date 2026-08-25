@@ -24,3 +24,14 @@ updates:
       go:
         patterns:
           - "*"
+
+  - package-ecosystem: gomod
+    directory: /hclogvet
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "[chore] : "
+    groups:
+      go-hclogvet:
+        patterns:
+          - "*"
